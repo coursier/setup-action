@@ -11,3 +11,4 @@ jobs:
     - run: echo $JAVA_HOME
     - run: echo $PATH
     - run: java -version
+    - run: sbtn show sbtVersion
