@@ -10,6 +10,7 @@ jobs:
       with:
         jvm: 11
         apps: sbt sbtn ammonite
+    - uses: coursier/cache-action@v5
     - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
     - run: echo $JAVA_HOME
     - run: echo $PATH
