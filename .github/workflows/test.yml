@@ -17,7 +17,7 @@ jobs:
     - run: java -version
     - run: cs java -version
     - run: |
-        touch build.sbt
+        echo 'name := "foo"' > build.sbt
         sbtn show sbtVersion
     - run: amm --help
     - run: bloop about
