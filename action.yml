@@ -18,13 +18,13 @@ runs:
   steps:
     - shell: bash
       run: |
-        echo '::group "Install Coursier"'
+        echo '::group name="Install Coursier"'
         curl -fLo cs https://git.io/coursier-cli-linux &&
         chmod +x cs &&
         ./cs
         echo '::endgroup'
 
-        echo '::group "Install JVM"'
+        echo '::group name="Install JVM"'
         if [ "${{ inputs.jvm }}" ]; then
           ./cs java --env ${{ inputs.jvm }}
         fi
@@ -32,7 +32,7 @@ runs:
         echo "JAVA_HOME=$(./cs java-home)" >> $GITHUB_ENV
         echo '::endgroup'
 
-        echo '::group "Install Apps"'
+        echo '::group name="Install Apps"'
         if [ "${{ inputs.apps }}" ]; then
           echo "COURSIER_BIN_DIR=${{ github.action_path }}/apps" >> $GITHUB_ENV
           echo "$COURSIER_BIN_DIR" >> $GITHUB_PATH
