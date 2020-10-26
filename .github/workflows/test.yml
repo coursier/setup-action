@@ -8,6 +8,7 @@ jobs:
     - id: cs-setup
       uses: ./
       with:
+        jvm: 11
         apps: sbt sbtn ammonite
     - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
     - run: echo $JAVA_HOME
