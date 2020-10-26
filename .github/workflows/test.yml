@@ -1,0 +1,13 @@
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - id: cs-setup
+      uses: ./
+    - run: echo version ${{ steps.cs-setup.outputs.cs-version }}
+    - run: echo $JAVA_HOME
+    - run: echo $PATH
+    - run: java -version
