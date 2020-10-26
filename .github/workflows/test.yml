@@ -9,7 +9,7 @@ jobs:
       uses: ./
       with:
         # jvm: 11
-        apps: sbt sbtn ammonite bloop scalafix
+        apps: sbt sbtn ammonite bloop scalafmt
     - uses: coursier/cache-action@v5
     - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
     - run: echo $JAVA_HOME
@@ -21,4 +21,4 @@ jobs:
         sbtn show sbtVersion
     - run: amm --help
     - run: bloop about
-    - run: scalafix --help
+    - run: scalafmt --help
