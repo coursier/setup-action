@@ -1,5 +1,5 @@
 echo '::group::Install Coursier'
-curl -fLo cs https://git.io/coursier-cli-linux &&
+curl -sfLo cs https://git.io/coursier-cli-linux &&
 chmod +x cs
 echo "::set-output name=cs-version::$(./cs --version)"
 echo '::endgroup::'
@@ -19,7 +19,7 @@ echo '::endgroup::'
 
 echo '::group::Install Apps'
 if [ "${{ inputs.apps }}" ]; then
-    COURSIER_BIN_DIR=${{ github.action_path }}/apps
+    export COURSIER_BIN_DIR=${{ github.action_path }}/apps
     echo "COURSIER_BIN_DIR=$COURSIER_BIN_DIR" >> $GITHUB_ENV
     echo "$COURSIER_BIN_DIR" >> $GITHUB_PATH
     ./cs install --dir $COURSIER_BIN_DIR ${{ inputs.apps }}
