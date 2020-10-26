@@ -11,14 +11,14 @@ jobs:
         # jvm: 11
         apps: sbt sbtn ammonite bloop scalafmt
     - uses: coursier/cache-action@v5
-    - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
-    - run: echo $JAVA_HOME
-    - run: echo $PATH
-    - run: java -version
-    - run: cs java -version
+    # - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
+    # - run: echo $JAVA_HOME
+    # - run: echo $PATH
+    # - run: java -version
+    # - run: cs java -version
     - run: |
         echo 'name := "foo"' > build.sbt
-        sbtn show sbtVersion
-    - run: amm --help
-    - run: bloop about
-    - run: scalafmt --help
+        sbtn show name
+    # - run: amm --help
+    # - run: bloop about
+    # - run: scalafmt --help
