@@ -1,0 +1,34 @@
+name: 'Coursier setup'
+description: 'Install Coursier launcher and run cs setup'
+inputs:
+  args:
+    description: 'Raw arguments to pass to cs setup'
+    required: true
+    default: ''
+outputs:
+  cs-version:
+    description: 'Version of the installed Coursier'
+    value: ${{ steps.get-version.outputs.cs-version }}
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: echo "args ${{ inputs.args }}"
+    - shell: bash
+      run: echo $JAVA_HOME
+    - shell: bash
+      run: echo $PATH
+    - shell: bash
+      run: |
+        curl -fLo cs https://git.io/coursier-cli-linux &&
+        chmod +x cs &&
+        ./cs
+    - shell: bash
+      run: eval "$(./cs setup --env ${{ inputs.args}})"
+    - shell: bash
+      run: echo $JAVA_HOME
+    - shell: bash
+      run: echo $PATH
+    - id: get-version
+      shell: bash
+      run: echo "::set-output name=cs-version::$(./cs --version)"
