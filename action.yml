@@ -43,6 +43,6 @@ runs:
             export COURSIER_BIN_DIR=${{ github.action_path }}/apps
             echo "COURSIER_BIN_DIR=$COURSIER_BIN_DIR" >> $GITHUB_ENV
             echo "$COURSIER_BIN_DIR" >> $GITHUB_PATH
-            ./cs install --dir $COURSIER_BIN_DIR ${{ inputs.apps }}
+            ./cs install --dir $COURSIER_BIN_DIR cs ${{ inputs.apps }}
         fi
         echo '::endgroup::'
