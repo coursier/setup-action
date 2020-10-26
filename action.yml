@@ -34,7 +34,8 @@ runs:
 
         echo '::group::Install Apps'
         if [ "${{ inputs.apps }}" ]; then
-          echo "COURSIER_BIN_DIR=${{ github.action_path }}/apps" >> $GITHUB_ENV
+          export COURSIER_BIN_DIR=${{ github.action_path }}/apps
+          echo "COURSIER_BIN_DIR=$COURSIER_BIN_DIR" >> $GITHUB_ENV
           echo "$COURSIER_BIN_DIR" >> $GITHUB_PATH
           ./cs install ${{ inputs.apps }}
         fi
