@@ -24,12 +24,18 @@ runs:
         ./cs
     - name: Install JVM
       shell: bash
-      run: '[ "${{ inputs.jvm }}" ] && eval "$(./cs java --env ${{ inputs.jvm }})"'
+      run: |
+        if [ "${{ inputs.jvm }}" ]; then
+          eval "$(./cs java --env ${{ inputs.jvm }})"
+        fi
     - shell: bash
       run: echo $JAVA_HOME
     - name: Install Apps
       shell: bash
-      run: '[ "${{ inputs.apps }}" ] && ./cs install ${{ inputs.apps }}'
+      run: |
+        if [ "${{ inputs.apps }}" ]; then
+          ./cs install ${{ inputs.apps }}
+        fi
     - shell: bash
       run: eval "$(./cs install --env)"
     - shell: bash
