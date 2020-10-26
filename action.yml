@@ -1,5 +1,9 @@
-name: 'Coursier setup'
-description: 'Install Coursier launcher and run cs setup'
+name: 'coursier-setup'
+description: 'Use Coursier to install JVM and Scala apps'
+author: 'Alexey Alekhin'
+branding:
+  icon: 'anchor'
+  color: 'green'
 inputs:
   jvm:
     description: 'JVM to install (leave empty to use default)'
