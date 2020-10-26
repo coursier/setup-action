@@ -7,8 +7,13 @@ jobs:
     - uses: actions/checkout@v2
     - id: cs-setup
       uses: ./
-    - run: echo version ${{ steps.cs-setup.outputs.cs-version }}
+      with:
+        jvm: 11
+        apps: sbt,sbtn,ammonite
+    - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
     - run: echo $JAVA_HOME
     - run: echo $PATH
     - run: java -version
+    - run: cs java -version
     - run: sbtn show sbtVersion
+    - run: amm --help
