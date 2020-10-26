@@ -1,0 +1,25 @@
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    # create an sbt file to enabling sbt caching
+    - run: echo 'name := "foo"' > build.sbt
+    - id: cs-setup
+      uses: ./
+      with:
+        # jvm: 11
+        apps: sbt sbtn ammonite bloop
+    - uses: coursier/cache-action@v5
+    - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
+    - run: echo $PATH
+    # test Java
+    - run: echo $JAVA_HOME
+    - run: java -version
+    - run: cs java -version
+    # test installed apps
+    - run: sbtn show name
+    - run: amm --help
+    - run: bloop about
