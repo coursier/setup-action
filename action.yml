@@ -20,7 +20,8 @@ runs:
       shell: bash
       run: |
         curl -fLo cs https://git.io/coursier-cli-linux &&
-        chmod +x cs
+        chmod +x cs &&
+        ./cs
     - name: Install JVM
       shell: bash
       run: '[[ "${{ inputs.jvm }}" ]] && eval "$(./cs java --env ${{ inputs.jvm }})"'
