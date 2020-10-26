@@ -1,0 +1,1 @@
+# Coursier setup GitHub Action
