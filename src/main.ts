@@ -19,9 +19,23 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
   return output.trim()
 }
 
+function coursierDownloadUrl(): string {
+  switch (process.platform) {
+    case 'linux':
+      return 'https://git.io/coursier-cli-linux'
+    case 'darwin':
+      return 'https://git.io/coursier-cli-macos'
+    case 'win32':
+      return 'https://git.io/coursier-cli-windows-exe'
+    default:
+      core.setFailed(`Unknown process.platform: ${process.platform}`)
+  }
+  return ''
+}
+
 async function cs(...args: string[]): Promise<string> {
   if (!tc.find('cs', coursierVersionSpec)) {
-    const csBinary = await tc.downloadTool('https://git.io/coursier-cli-linux')
+    const csBinary = await tc.downloadTool(coursierDownloadUrl())
     await cli.exec('chmod', ['+x', csBinary])
     const version = await execOutput(csBinary, '--version')
     const csCached = await tc.cacheFile(csBinary, 'cs', 'cs', version)

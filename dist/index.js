@@ -117,10 +117,23 @@ function execOutput(cmd, ...args) {
         return output.trim();
     });
 }
+function coursierDownloadUrl() {
+    switch (process.platform) {
+        case 'linux':
+            return 'https://git.io/coursier-cli-linux';
+        case 'darwin':
+            return 'https://git.io/coursier-cli-macos';
+        case 'win32':
+            return 'https://git.io/coursier-cli-windows-exe';
+        default:
+            core.setFailed(`Unknown process.platform: ${process.platform}`);
+    }
+    return '';
+}
 function cs(...args) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!tc.find('cs', coursierVersionSpec)) {
-            const csBinary = yield tc.downloadTool('https://git.io/coursier-cli-linux');
+            const csBinary = yield tc.downloadTool(coursierDownloadUrl());
             yield cli.exec('chmod', ['+x', csBinary]);
             const version = yield execOutput(csBinary, '--version');
             const csCached = yield tc.cacheFile(csBinary, 'cs', 'cs', version);
