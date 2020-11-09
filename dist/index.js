@@ -125,7 +125,7 @@ function cs(...args) {
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            core.group('Install Coursier', () => __awaiter(this, void 0, void 0, function* () {
+            yield core.group('Install Coursier', () => __awaiter(this, void 0, void 0, function* () {
                 const version = yield cs('--version');
                 core.setOutput('cs-version', version);
             }));

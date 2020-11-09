@@ -25,7 +25,7 @@ async function cs(...args: string[]): Promise<string> {
 
 async function run(): Promise<void> {
   try {
-    core.group('Install Coursier', async () => {
+    await core.group('Install Coursier', async () => {
       const version = await cs('--version')
       core.setOutput('cs-version', version)
     })
