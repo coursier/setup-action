@@ -107,7 +107,7 @@ function cs(...args) {
         let csCached = tc.find('cs', 'latest');
         if (!csCached) {
             const csBinary = yield tc.downloadTool('https://git.io/coursier-cli-linux');
-            // await cli.exec('chmod', ['+x', csBinary])
+            yield cli.exec('chmod', ['+x', csBinary]);
             csCached = yield tc.cacheFile(csBinary, 'cs', 'cs', 'latest');
             core.addPath(csCached);
         }

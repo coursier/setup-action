@@ -8,7 +8,7 @@ async function cs(...args: string[]): Promise<string> {
   let csCached = tc.find('cs', 'latest')
   if (!csCached) {
     const csBinary = await tc.downloadTool('https://git.io/coursier-cli-linux')
-    // await cli.exec('chmod', ['+x', csBinary])
+    await cli.exec('chmod', ['+x', csBinary])
     csCached = await tc.cacheFile(csBinary, 'cs', 'cs', 'latest')
     core.addPath(csCached)
   }
@@ -34,9 +34,7 @@ async function run(): Promise<void> {
     const jvmInput = core.getInput('jvm')
     const jvmArg = jvmInput ? ['--jvm', jvmInput] : []
     if (!jvmInput && process.env.JAVA_HOME) {
-      core.info(
-        `skipping, JVM is already installed in ${process.env.JAVA_HOME}`
-      )
+      core.info(`skipping, JVM is already installed in ${process.env.JAVA_HOME}`)
     } else {
       await cs('java', ...jvmArg, '-version')
       const csJavaHome = await cs('java-home', ...jvmArg)
