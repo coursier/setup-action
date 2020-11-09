@@ -121,9 +121,10 @@ function run() {
         try {
             yield core.group('Install Coursier', () => __awaiter(this, void 0, void 0, function* () {
                 const csBinary = yield tc.downloadTool('https://git.io/coursier-cli-linux');
-                // await cli.exec('chmod', ['+x', csBinary])
                 const csCached = yield tc.cacheFile(csBinary, 'cs', 'cs', 'latest');
+                yield cli.exec('chmod', ['+x', csCached]);
                 core.addPath(csCached);
+                core.info(`csCached: ${tc.find('cs', 'latest')}`);
                 const version = yield cs('--version');
                 core.setOutput('cs-version', version);
             }));

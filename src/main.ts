@@ -21,9 +21,10 @@ async function run(): Promise<void> {
   try {
     await core.group('Install Coursier', async () => {
       const csBinary = await tc.downloadTool('https://git.io/coursier-cli-linux')
-      // await cli.exec('chmod', ['+x', csBinary])
       const csCached = await tc.cacheFile(csBinary, 'cs', 'cs', 'latest')
+      await cli.exec('chmod', ['+x', csCached])
       core.addPath(csCached)
+      core.info(`csCached: ${tc.find('cs', 'latest')}`)
       const version = await cs('--version')
       core.setOutput('cs-version', version)
     })
