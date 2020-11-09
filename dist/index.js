@@ -119,22 +119,23 @@ function execOutput(cmd, ...args) {
 }
 function installCoursier() {
     return __awaiter(this, void 0, void 0, function* () {
-        const csBinary = yield tc.downloadTool('https://git.io/coursier-cli-linux');
-        yield cli.exec('chmod', ['+x', csBinary]);
-        const version = yield execOutput(csBinary, '--version');
-        const csCached = yield tc.cacheFile(csBinary, 'cs', 'cs', version);
-        yield cli.exec('chmod', ['+x', csCached]);
-        yield cli.exec('ls', ['-al', csCached]);
-        core.addPath(csCached);
-        core.info(`latest: ${tc.find('cs', coursierVersionSpec)}`);
-        core.info(`all versions: ${tc.findAllVersions('cs')}`);
-        return version;
+        if (!tc.find('cs', coursierVersionSpec)) {
+            const csBinary = yield tc.downloadTool('https://git.io/coursier-cli-linux');
+            yield cli.exec('chmod', ['+x', csBinary]);
+            const version = yield execOutput(csBinary, '--version');
+            const csCached = yield tc.cacheFile(csBinary, 'cs', 'cs', version);
+            yield cli.exec('ls', ['-al', csCached]);
+            core.addPath(csCached);
+        }
+        // core.info(`version: ${await cli.exec(path.join(csCached))}`)
+        // core.info(`all versions: ${tc.findAllVersions('cs')}`)
+        return cs('--version');
     });
 }
 function cs(...args) {
     return __awaiter(this, void 0, void 0, function* () {
-        const csCached = tc.find('cs', coursierVersionSpec);
-        return execOutput(csCached, ...args);
+        // const csCached = tc.find('cs', coursierVersionSpec)
+        return execOutput('cs', ...args);
     });
 }
 function run() {

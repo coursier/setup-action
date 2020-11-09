@@ -20,21 +20,22 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
 }
 
 async function installCoursier(): Promise<string> {
-  const csBinary = await tc.downloadTool('https://git.io/coursier-cli-linux')
-  await cli.exec('chmod', ['+x', csBinary])
-  const version = await execOutput(csBinary, '--version')
-  const csCached = await tc.cacheFile(csBinary, 'cs', 'cs', version)
-  await cli.exec('chmod', ['+x', csCached])
-  await cli.exec('ls', ['-al', csCached])
-  core.addPath(csCached)
-  core.info(`latest: ${tc.find('cs', coursierVersionSpec)}`)
-  core.info(`all versions: ${tc.findAllVersions('cs')}`)
-  return version
+  if (!tc.find('cs', coursierVersionSpec)) {
+    const csBinary = await tc.downloadTool('https://git.io/coursier-cli-linux')
+    await cli.exec('chmod', ['+x', csBinary])
+    const version = await execOutput(csBinary, '--version')
+    const csCached = await tc.cacheFile(csBinary, 'cs', 'cs', version)
+    await cli.exec('ls', ['-al', csCached])
+    core.addPath(csCached)
+  }
+  // core.info(`version: ${await cli.exec(path.join(csCached))}`)
+  // core.info(`all versions: ${tc.findAllVersions('cs')}`)
+  return cs('--version')
 }
 
 async function cs(...args: string[]): Promise<string> {
-  const csCached = tc.find('cs', coursierVersionSpec)
-  return execOutput(csCached, ...args)
+  // const csCached = tc.find('cs', coursierVersionSpec)
+  return execOutput('cs', ...args)
 }
 
 async function run(): Promise<void> {
