@@ -117,7 +117,7 @@ function execOutput(cmd, ...args) {
         return output.trim();
     });
 }
-function installCoursier() {
+function cs(...args) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!tc.find('cs', coursierVersionSpec)) {
             const csBinary = yield tc.downloadTool('https://git.io/coursier-cli-linux');
@@ -127,14 +127,6 @@ function installCoursier() {
             yield cli.exec('ls', ['-al', csCached]);
             core.addPath(csCached);
         }
-        // core.info(`version: ${await cli.exec(path.join(csCached))}`)
-        // core.info(`all versions: ${tc.findAllVersions('cs')}`)
-        return cs('--version');
-    });
-}
-function cs(...args) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // const csCached = tc.find('cs', coursierVersionSpec)
         return execOutput('cs', ...args);
     });
 }
@@ -142,31 +134,31 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             yield core.group('Install Coursier', () => __awaiter(this, void 0, void 0, function* () {
-                const version = yield installCoursier();
+                const version = yield cs('--version');
                 core.setOutput('cs-version', version);
             }));
-            core.startGroup('Install JVM');
-            const jvmInput = core.getInput('jvm');
-            const jvmArg = jvmInput ? ['--jvm', jvmInput] : [];
-            if (!jvmInput && process.env.JAVA_HOME) {
-                core.info(`skipping, JVM is already installed in ${process.env.JAVA_HOME}`);
-            }
-            else {
-                yield cs('java', ...jvmArg, '-version');
-                const csJavaHome = yield cs('java-home', ...jvmArg);
-                core.exportVariable('JAVA_HOME', csJavaHome);
-                core.addPath(path.join(csJavaHome, 'bin'));
-            }
-            core.endGroup();
-            core.startGroup('Install Apps');
-            const apps = core.getInput('apps').split(' ');
-            if (apps.length) {
-                const coursierBinDir = path.join(os.homedir(), 'cs-bin');
-                core.exportVariable('COURSIER_BIN_DIR', coursierBinDir);
-                core.addPath(coursierBinDir);
-                yield cs('install', 'cs', ...apps);
-            }
-            core.endGroup();
+            yield core.group('Install JVM', () => __awaiter(this, void 0, void 0, function* () {
+                const jvmInput = core.getInput('jvm');
+                const jvmArg = jvmInput ? ['--jvm', jvmInput] : [];
+                if (!jvmInput && process.env.JAVA_HOME) {
+                    core.info(`skipping, JVM is already installed in ${process.env.JAVA_HOME}`);
+                }
+                else {
+                    yield cs('java', ...jvmArg, '-version');
+                    const csJavaHome = yield cs('java-home', ...jvmArg);
+                    core.exportVariable('JAVA_HOME', csJavaHome);
+                    core.addPath(path.join(csJavaHome, 'bin'));
+                }
+            }));
+            yield core.group('Install Apps', () => __awaiter(this, void 0, void 0, function* () {
+                const apps = core.getInput('apps').split(' ');
+                if (apps.length) {
+                    const coursierBinDir = path.join(os.homedir(), 'cs-bin');
+                    core.exportVariable('COURSIER_BIN_DIR', coursierBinDir);
+                    core.addPath(coursierBinDir);
+                    yield cs('install', ...apps);
+                }
+            }));
         }
         catch (error) {
             core.setFailed(error.message);

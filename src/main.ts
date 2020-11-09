@@ -19,7 +19,7 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
   return output.trim()
 }
 
-async function installCoursier(): Promise<string> {
+async function cs(...args: string[]): Promise<string> {
   if (!tc.find('cs', coursierVersionSpec)) {
     const csBinary = await tc.downloadTool('https://git.io/coursier-cli-linux')
     await cli.exec('chmod', ['+x', csBinary])
@@ -28,45 +28,38 @@ async function installCoursier(): Promise<string> {
     await cli.exec('ls', ['-al', csCached])
     core.addPath(csCached)
   }
-  // core.info(`version: ${await cli.exec(path.join(csCached))}`)
-  // core.info(`all versions: ${tc.findAllVersions('cs')}`)
-  return cs('--version')
-}
-
-async function cs(...args: string[]): Promise<string> {
-  // const csCached = tc.find('cs', coursierVersionSpec)
   return execOutput('cs', ...args)
 }
 
 async function run(): Promise<void> {
   try {
     await core.group('Install Coursier', async () => {
-      const version = await installCoursier()
+      const version = await cs('--version')
       core.setOutput('cs-version', version)
     })
 
-    core.startGroup('Install JVM')
-    const jvmInput = core.getInput('jvm')
-    const jvmArg = jvmInput ? ['--jvm', jvmInput] : []
-    if (!jvmInput && process.env.JAVA_HOME) {
-      core.info(`skipping, JVM is already installed in ${process.env.JAVA_HOME}`)
-    } else {
-      await cs('java', ...jvmArg, '-version')
-      const csJavaHome = await cs('java-home', ...jvmArg)
-      core.exportVariable('JAVA_HOME', csJavaHome)
-      core.addPath(path.join(csJavaHome, 'bin'))
-    }
-    core.endGroup()
+    await core.group('Install JVM', async () => {
+      const jvmInput = core.getInput('jvm')
+      const jvmArg = jvmInput ? ['--jvm', jvmInput] : []
+      if (!jvmInput && process.env.JAVA_HOME) {
+        core.info(`skipping, JVM is already installed in ${process.env.JAVA_HOME}`)
+      } else {
+        await cs('java', ...jvmArg, '-version')
+        const csJavaHome = await cs('java-home', ...jvmArg)
+        core.exportVariable('JAVA_HOME', csJavaHome)
+        core.addPath(path.join(csJavaHome, 'bin'))
+      }
+    })
 
-    core.startGroup('Install Apps')
-    const apps: string[] = core.getInput('apps').split(' ')
-    if (apps.length) {
-      const coursierBinDir = path.join(os.homedir(), 'cs-bin')
-      core.exportVariable('COURSIER_BIN_DIR', coursierBinDir)
-      core.addPath(coursierBinDir)
-      await cs('install', 'cs', ...apps)
-    }
-    core.endGroup()
+    await core.group('Install Apps', async () => {
+      const apps: string[] = core.getInput('apps').split(' ')
+      if (apps.length) {
+        const coursierBinDir = path.join(os.homedir(), 'cs-bin')
+        core.exportVariable('COURSIER_BIN_DIR', coursierBinDir)
+        core.addPath(coursierBinDir)
+        await cs('install', ...apps)
+      }
+    })
   } catch (error) {
     core.setFailed(error.message)
   }
