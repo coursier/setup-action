@@ -1,11 +1,19 @@
 import * as core from '@actions/core'
 import * as cli from '@actions/exec'
+import * as tc from '@actions/tool-cache'
 import * as path from 'path'
 import * as os from 'os'
 
 async function cs(...args: string[]): Promise<string> {
+  let csCached = tc.find('cs', 'latest')
+  if (!csCached) {
+    const csBinary = await tc.downloadTool('https://git.io/coursier-cli-linux')
+    // await cli.exec('chmod', ['+x', csBinary])
+    csCached = await tc.cacheFile(csBinary, 'cs', 'cs', 'latest')
+    core.addPath(csCached)
+  }
   let output = ''
-  await cli.exec('./cs', args.filter(Boolean), {
+  await cli.exec(csCached, args.filter(Boolean), {
     listeners: {
       stdout: (data: Buffer) => {
         output += data.toString()
@@ -17,12 +25,10 @@ async function cs(...args: string[]): Promise<string> {
 
 async function run(): Promise<void> {
   try {
-    core.startGroup('Install Coursier')
-    await cli.exec('curl', ['-sfLo', 'cs', 'https://git.io/coursier-cli-linux'])
-    await cli.exec('chmod', ['+x', './cs'])
-    await cs('--help')
-    core.setOutput('cs-version', await cs('--version'))
-    core.endGroup()
+    core.group('Install Coursier', async () => {
+      const version = await cs('--version')
+      core.setOutput('cs-version', version)
+    })
 
     core.startGroup('Install JVM')
     const jvmInput = core.getInput('jvm')
