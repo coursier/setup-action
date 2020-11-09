@@ -16,7 +16,6 @@ inputs:
 outputs:
   cs-version:
     description: 'Version of the installed Coursier'
-    value: ${{ steps.cs-setup.outputs.cs-version }}
 runs:
   using: 'node12'
   main: 'dist/index.js'
