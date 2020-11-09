@@ -10,7 +10,7 @@ jobs:
     - id: cs-setup
       uses: ./
       with:
-        jvm: 11
+        # jvm: 11
         apps: sbt sbtn ammonite bloop
     # - uses: coursier/cache-action@v5
     - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
