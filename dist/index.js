@@ -124,7 +124,8 @@ function run() {
                 const csCached = yield tc.cacheFile(csBinary, 'cs', 'cs', 'latest');
                 yield cli.exec('chmod', ['+x', csCached]);
                 core.addPath(csCached);
-                core.info(`csCached: ${tc.find('cs', 'latest')}`);
+                core.info(`latest: ${tc.find('cs', 'latest')}`);
+                core.info(`all versions: ${tc.findAllVersions('cs')}`);
                 const version = yield cs('--version');
                 core.setOutput('cs-version', version);
             }));
