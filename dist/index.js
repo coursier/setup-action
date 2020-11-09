@@ -102,7 +102,8 @@ const cli = __importStar(__webpack_require__(514));
 const tc = __importStar(__webpack_require__(784));
 const path = __importStar(__webpack_require__(622));
 const os = __importStar(__webpack_require__(87));
-function cs(...args) {
+const coursierVersionSpec = `^2.0`;
+function execOutput(cmd, ...args) {
     return __awaiter(this, void 0, void 0, function* () {
         let output = '';
         const options = {
@@ -112,21 +113,33 @@ function cs(...args) {
                 }
             }
         };
-        yield cli.exec(tc.find('cs', 'latest'), args.filter(Boolean), options);
+        yield cli.exec(cmd, args.filter(Boolean), options);
         return output.trim();
+    });
+}
+function installCoursier() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const csBinary = yield tc.downloadTool('https://git.io/coursier-cli-linux');
+        yield cli.exec('chmod', ['+x', csBinary]);
+        const version = yield execOutput(csBinary, '--version');
+        const csCached = yield tc.cacheFile(csBinary, 'cs', 'cs', version);
+        core.addPath(csCached);
+        core.info(`latest: ${tc.find('cs', coursierVersionSpec)}`);
+        core.info(`all versions: ${tc.findAllVersions('cs')}`);
+        return version;
+    });
+}
+function cs(...args) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const csCached = tc.find('cs', coursierVersionSpec);
+        return execOutput(csCached, ...args);
     });
 }
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             yield core.group('Install Coursier', () => __awaiter(this, void 0, void 0, function* () {
-                const csBinary = yield tc.downloadTool('https://git.io/coursier-cli-linux');
-                const csCached = yield tc.cacheFile(csBinary, 'cs', 'cs', 'latest');
-                yield cli.exec('chmod', ['+x', csCached]);
-                core.addPath(csCached);
-                core.info(`latest: ${tc.find('cs', 'latest')}`);
-                core.info(`all versions: ${tc.findAllVersions('cs')}`);
-                const version = yield cs('--version');
+                const version = yield installCoursier();
                 core.setOutput('cs-version', version);
             }));
             core.startGroup('Install JVM');
