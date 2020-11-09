@@ -38,12 +38,12 @@ async function run(): Promise<void> {
     core.endGroup()
 
     core.startGroup('Install Apps')
-    const apps = core.getInput('apps')
-    if (apps) {
+    const apps: string[] = core.getInput('apps').split(' ')
+    if (apps.length) {
       const coursierBinDir = path.join(os.homedir(), 'cs-bin')
       core.exportVariable('COURSIER_BIN_DIR', coursierBinDir)
       core.addPath(coursierBinDir)
-      await cli.exec('./cs', ['install', 'cs', apps])
+      await cli.exec('./cs', ['install', 'cs'].concat(apps))
     }
     core.endGroup()
   } catch (error) {

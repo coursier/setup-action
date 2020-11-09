@@ -127,12 +127,12 @@ function run() {
             }
             core.endGroup();
             core.startGroup('Install Apps');
-            const apps = core.getInput('apps');
-            if (apps) {
+            const apps = core.getInput('apps').split(' ');
+            if (apps.length) {
                 const coursierBinDir = path.join(os.homedir(), 'cs-bin');
                 core.exportVariable('COURSIER_BIN_DIR', coursierBinDir);
                 core.addPath(coursierBinDir);
-                yield cli.exec('./cs', ['install', 'cs', apps]);
+                yield cli.exec('./cs', ['install', 'cs'].concat(apps));
             }
             core.endGroup();
         }
