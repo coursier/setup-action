@@ -117,17 +117,14 @@ function run() {
             core.setOutput('cs-version', yield cs('--version'));
             core.endGroup();
             core.startGroup('Install JVM');
-            let JVM = '';
             const jvmInput = core.getInput('jvm');
-            if (jvmInput) {
-                JVM = `--jvm ${jvmInput}`;
-            }
-            if (!JVM && process.env.JAVA_HOME) {
+            const jvmArg = jvmInput ? ['--jvm', jvmInput] : [];
+            if (!jvmInput && process.env.JAVA_HOME) {
                 core.info(`skipping, JVM is already installed in ${process.env.JAVA_HOME}`);
             }
             else {
-                yield cs('java', JVM, '-version');
-                const csJavaHome = yield cs('java-home', JVM);
+                yield cs('java', ...jvmArg, '-version');
+                const csJavaHome = yield cs('java-home', ...jvmArg);
                 core.exportVariable('JAVA_HOME', csJavaHome);
                 core.addPath(path.join(csJavaHome, 'bin'));
             }

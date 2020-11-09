@@ -25,18 +25,15 @@ async function run(): Promise<void> {
     core.endGroup()
 
     core.startGroup('Install JVM')
-    let JVM = ''
     const jvmInput = core.getInput('jvm')
-    if (jvmInput) {
-      JVM = `--jvm ${jvmInput}`
-    }
-    if (!JVM && process.env.JAVA_HOME) {
+    const jvmArg = jvmInput ? ['--jvm', jvmInput] : []
+    if (!jvmInput && process.env.JAVA_HOME) {
       core.info(
         `skipping, JVM is already installed in ${process.env.JAVA_HOME}`
       )
     } else {
-      await cs('java', JVM, '-version')
-      const csJavaHome = await cs('java-home', JVM)
+      await cs('java', ...jvmArg, '-version')
+      const csJavaHome = await cs('java-home', ...jvmArg)
       core.exportVariable('JAVA_HOME', csJavaHome)
       core.addPath(path.join(csJavaHome, 'bin'))
     }
