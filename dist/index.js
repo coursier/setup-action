@@ -104,7 +104,7 @@ function cs(...args) {
                 }
             }
         });
-        return output;
+        return output.trim();
     });
 }
 function run() {

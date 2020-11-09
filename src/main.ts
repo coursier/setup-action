@@ -12,7 +12,7 @@ async function cs(...args: string[]): Promise<string> {
       }
     }
   })
-  return output
+  return output.trim()
 }
 
 async function run(): Promise<void> {
