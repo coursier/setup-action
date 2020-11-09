@@ -3,21 +3,25 @@ import * as cli from '@actions/exec'
 import * as path from 'path'
 import * as os from 'os'
 
+async function cs(...args: string[]): Promise<string> {
+  let output = ''
+  await cli.exec('./cs', args.filter(Boolean), {
+    listeners: {
+      stdout: (data: Buffer) => {
+        output += data.toString()
+      }
+    }
+  })
+  return output
+}
+
 async function run(): Promise<void> {
   try {
     core.startGroup('Install Coursier')
     await cli.exec('curl', ['-sfLo', 'cs', 'https://git.io/coursier-cli-linux'])
     await cli.exec('chmod', ['+x', './cs'])
-    await cli.exec('./cs', ['--help'])
-    let csVersion = ''
-    await cli.exec('./cs', ['--version'], {
-      listeners: {
-        stdout: (data: Buffer) => {
-          csVersion += data.toString()
-        }
-      }
-    })
-    core.setOutput('cs-version', csVersion)
+    await cs('--help')
+    core.setOutput('cs-version', await cs('--version'))
     core.endGroup()
 
     core.startGroup('Install JVM')
@@ -31,9 +35,10 @@ async function run(): Promise<void> {
         `skipping, JVM is already installed in ${process.env.JAVA_HOME}`
       )
     } else {
-      await cli.exec('./cs', ['java', JVM, '-version'])
-      core.exportVariable('JAVA_HOME', './cs java-home $JVM') // TODO
-      core.addPath('$(./cs java-home $JVM)/bin') // TODO
+      await cs('java', JVM, '-version')
+      const csJavaHome = await cs('java-home', JVM)
+      core.exportVariable('JAVA_HOME', csJavaHome)
+      core.addPath(path.join(csJavaHome, 'bin'))
     }
     core.endGroup()
 
@@ -43,7 +48,7 @@ async function run(): Promise<void> {
       const coursierBinDir = path.join(os.homedir(), 'cs-bin')
       core.exportVariable('COURSIER_BIN_DIR', coursierBinDir)
       core.addPath(coursierBinDir)
-      await cli.exec('./cs', ['install', 'cs'].concat(apps))
+      await cs('install', 'cs', ...apps)
     }
     core.endGroup()
   } catch (error) {

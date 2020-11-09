@@ -94,22 +94,27 @@ const core = __importStar(__webpack_require__(186));
 const cli = __importStar(__webpack_require__(514));
 const path = __importStar(__webpack_require__(622));
 const os = __importStar(__webpack_require__(87));
+function cs(...args) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let output = '';
+        yield cli.exec('./cs', args.filter(Boolean), {
+            listeners: {
+                stdout: (data) => {
+                    output += data.toString();
+                }
+            }
+        });
+        return output;
+    });
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             core.startGroup('Install Coursier');
             yield cli.exec('curl', ['-sfLo', 'cs', 'https://git.io/coursier-cli-linux']);
             yield cli.exec('chmod', ['+x', './cs']);
-            yield cli.exec('./cs', ['--help']);
-            let csVersion = '';
-            yield cli.exec('./cs', ['--version'], {
-                listeners: {
-                    stdout: (data) => {
-                        csVersion += data.toString();
-                    }
-                }
-            });
-            core.setOutput('cs-version', csVersion);
+            yield cs('--help');
+            core.setOutput('cs-version', yield cs('--version'));
             core.endGroup();
             core.startGroup('Install JVM');
             let JVM = '';
@@ -121,9 +126,10 @@ function run() {
                 core.info(`skipping, JVM is already installed in ${process.env.JAVA_HOME}`);
             }
             else {
-                yield cli.exec('./cs', ['java', JVM, '-version']);
-                core.exportVariable('JAVA_HOME', './cs java-home $JVM'); // TODO
-                core.addPath('$(./cs java-home $JVM)/bin'); // TODO
+                yield cs('java', JVM, '-version');
+                const csJavaHome = yield cs('java-home', JVM);
+                core.exportVariable('JAVA_HOME', csJavaHome);
+                core.addPath(path.join(csJavaHome, 'bin'));
             }
             core.endGroup();
             core.startGroup('Install Apps');
@@ -132,7 +138,7 @@ function run() {
                 const coursierBinDir = path.join(os.homedir(), 'cs-bin');
                 core.exportVariable('COURSIER_BIN_DIR', coursierBinDir);
                 core.addPath(coursierBinDir);
-                yield cli.exec('./cs', ['install', 'cs'].concat(apps));
+                yield cs('install', 'cs', ...apps);
             }
             core.endGroup();
         }
