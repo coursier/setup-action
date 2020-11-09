@@ -1,36 +1,51 @@
 import * as core from '@actions/core'
+import * as cli from '@actions/exec'
+import * as path from 'path'
+import * as os from 'os'
 
 async function run(): Promise<void> {
   try {
-    // echo '::group::Install Coursier'
-    // curl -sfLo cs https://git.io/coursier-cli-linux
-    // chmod +x cs
-    // ./cs --help
-    // echo "::set-output name=cs-version::$(./cs --version)"
-    // echo '::endgroup::'
+    core.startGroup('Install Coursier')
+    await cli.exec('curl', ['-sfLo', 'cs', 'https://git.io/coursier-cli-linux'])
+    await cli.exec('chmod', ['+x', './cs'])
+    await cli.exec('./cs', ['--help'])
+    let csVersion = ''
+    await cli.exec('./cs', ['--version'], {
+      listeners: {
+        stdout: (data: Buffer) => {
+          csVersion += data.toString()
+        }
+      }
+    })
+    core.setOutput('cs-version', csVersion)
+    core.endGroup()
 
-    // echo '::group::Install JVM'
-    // JVM=""
-    // if [ "${{ inputs.jvm }}" ]; then
-    //     JVM="--jvm ${{ inputs.jvm }}"
-    // fi
-    // if [ -z "$JVM" ] && [ "$JAVA_HOME" ]; then
-    //     echo "skipping, JVM is already installed in $JAVA_HOME"
-    // else
-    //     ./cs java $JVM -version
-    //     echo "JAVA_HOME=$(./cs java-home $JVM)" >> $GITHUB_ENV
-    //     echo "$(./cs java-home $JVM)/bin" >> $GITHUB_PATH
-    // fi
-    // echo '::endgroup::'
+    core.startGroup('Install JVM')
+    let JVM = ''
+    const jvmInput = core.getInput('jvm')
+    if (jvmInput) {
+      JVM = `--jvm ${jvmInput}`
+    }
+    if (!JVM && process.env.JAVA_HOME) {
+      core.info(
+        `skipping, JVM is already installed in ${process.env.JAVA_HOME}`
+      )
+    } else {
+      await cli.exec('./cs', ['java', JVM, '-version'])
+      core.exportVariable('JAVA_HOME', './cs java-home $JVM') // TODO
+      core.addPath('$(./cs java-home $JVM)/bin') // TODO
+    }
+    core.endGroup()
 
-    // echo '::group::Install Apps'
-    // if [ "${{ inputs.apps }}" ]; then
-    //     export COURSIER_BIN_DIR=${{ github.action_path }}/apps
-    //     echo "COURSIER_BIN_DIR=$COURSIER_BIN_DIR" >> $GITHUB_ENV
-    //     echo "$COURSIER_BIN_DIR" >> $GITHUB_PATH
-    //     ./cs install cs ${{ inputs.apps }}
-    // fi
-    // echo '::endgroup::'
+    core.startGroup('Install Apps')
+    const apps = core.getInput('apps')
+    if (apps) {
+      const coursierBinDir = path.join(os.homedir(), 'cs-bin')
+      core.exportVariable('COURSIER_BIN_DIR', coursierBinDir)
+      core.addPath(coursierBinDir)
+      await cli.exec('./cs', ['install', 'cs', apps])
+    }
+    core.endGroup()
   } catch (error) {
     core.setFailed(error.message)
   }
