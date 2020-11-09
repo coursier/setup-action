@@ -5,27 +5,25 @@ import * as path from 'path'
 import * as os from 'os'
 
 async function cs(...args: string[]): Promise<string> {
-  let csCached = tc.find('cs', 'latest')
-  if (!csCached) {
-    const csBinary = await tc.downloadTool('https://git.io/coursier-cli-linux')
-    await cli.exec('chmod', ['+x', csBinary])
-    csCached = await tc.cacheFile(csBinary, 'cs', 'cs', 'latest')
-    core.addPath(csCached)
-  }
   let output = ''
-  await cli.exec(csCached, args.filter(Boolean), {
+  const options = {
     listeners: {
       stdout: (data: Buffer) => {
         output += data.toString()
       }
     }
-  })
+  }
+  await cli.exec(tc.find('cs', 'latest'), args.filter(Boolean), options)
   return output.trim()
 }
 
 async function run(): Promise<void> {
   try {
     await core.group('Install Coursier', async () => {
+      const csBinary = await tc.downloadTool('https://git.io/coursier-cli-linux')
+      await cli.exec('chmod', ['+x', csBinary])
+      const csCached = await tc.cacheFile(csBinary, 'cs', 'cs', 'latest')
+      core.addPath(csCached)
       const version = await cs('--version')
       core.setOutput('cs-version', version)
     })
