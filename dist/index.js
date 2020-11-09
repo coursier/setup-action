@@ -124,6 +124,7 @@ function installCoursier() {
         const version = yield execOutput(csBinary, '--version');
         const csCached = yield tc.cacheFile(csBinary, 'cs', 'cs', version);
         yield cli.exec('chmod', ['+x', csCached]);
+        yield cli.exec('ls', ['-al', csCached]);
         core.addPath(csCached);
         core.info(`latest: ${tc.find('cs', coursierVersionSpec)}`);
         core.info(`all versions: ${tc.findAllVersions('cs')}`);

@@ -25,6 +25,7 @@ async function installCoursier(): Promise<string> {
   const version = await execOutput(csBinary, '--version')
   const csCached = await tc.cacheFile(csBinary, 'cs', 'cs', version)
   await cli.exec('chmod', ['+x', csCached])
+  await cli.exec('ls', ['-al', csCached])
   core.addPath(csCached)
   core.info(`latest: ${tc.find('cs', coursierVersionSpec)}`)
   core.info(`all versions: ${tc.findAllVersions('cs')}`)
