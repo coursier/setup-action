@@ -62,7 +62,7 @@ async function run(): Promise<void> {
       core.setOutput('cs-version', version)
     })
 
-    await core.group('Install JVM', async () => {
+    const installJVM = core.group('Install JVM', async () => {
       const jvmInput = core.getInput('jvm')
       const jvmArg = jvmInput ? ['--jvm', jvmInput] : []
       if (!jvmInput && process.env.JAVA_HOME) {
@@ -75,7 +75,7 @@ async function run(): Promise<void> {
       }
     })
 
-    await core.group('Install Apps', async () => {
+    const installApps = core.group('Install Apps', async () => {
       const apps: string[] = core.getInput('apps').split(' ')
       if (apps.length) {
         const coursierBinDir = path.join(os.homedir(), 'cs', 'bin')
@@ -84,6 +84,8 @@ async function run(): Promise<void> {
         await cs('install', ...apps)
       }
     })
+
+    Promise.all([installJVM, installApps])
   } catch (error) {
     core.setFailed(error.message)
   }
