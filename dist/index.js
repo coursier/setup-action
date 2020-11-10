@@ -148,8 +148,8 @@ function cs(...args) {
         if (!tc.find('cs', coursierVersionSpec)) {
             const csBinary = yield downloadCoursier();
             const version = yield execOutput(csBinary, '--version');
-            // const binaryName = process.platform == 'win32' ? 'cs.exe' : 'cs'
-            const csCached = yield tc.cacheFile(csBinary, 'cs', 'cs', version);
+            const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs';
+            const csCached = yield tc.cacheFile(csBinary, binaryName, 'cs', version);
             yield cli.exec('ls', ['-al', csCached]);
             core.addPath(csCached);
         }

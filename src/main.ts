@@ -47,8 +47,8 @@ async function cs(...args: string[]): Promise<string> {
   if (!tc.find('cs', coursierVersionSpec)) {
     const csBinary = await downloadCoursier()
     const version = await execOutput(csBinary, '--version')
-    // const binaryName = process.platform == 'win32' ? 'cs.exe' : 'cs'
-    const csCached = await tc.cacheFile(csBinary, 'cs', 'cs', version)
+    const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs'
+    const csCached = await tc.cacheFile(csBinary, binaryName, 'cs', version)
     await cli.exec('ls', ['-al', csCached])
     core.addPath(csCached)
   }
