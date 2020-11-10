@@ -2,7 +2,12 @@ on: [push]
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+        jvm: ['', 'openjdk:11']
     steps:
     - uses: actions/checkout@v2
     # create an sbt file to enabling sbt caching
@@ -10,7 +15,7 @@ jobs:
     - id: cs-setup
       uses: ./
       with:
-        # jvm: 11
+        jvm: ${{ matrix.jvm }}
         apps: sbt sbtn ammonite bloop
     # - uses: coursier/cache-action@v5
     - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
