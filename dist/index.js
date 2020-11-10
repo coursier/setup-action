@@ -163,7 +163,7 @@ function run() {
                 const version = yield cs('--version');
                 core.setOutput('cs-version', version);
             }));
-            const installJVM = core.group('Install JVM', () => __awaiter(this, void 0, void 0, function* () {
+            yield core.group('Install JVM', () => __awaiter(this, void 0, void 0, function* () {
                 const jvmInput = core.getInput('jvm');
                 const jvmArg = jvmInput ? ['--jvm', jvmInput] : [];
                 if (!jvmInput && process.env.JAVA_HOME) {
@@ -176,7 +176,7 @@ function run() {
                     core.addPath(path.join(csJavaHome, 'bin'));
                 }
             }));
-            const installApps = core.group('Install Apps', () => __awaiter(this, void 0, void 0, function* () {
+            yield core.group('Install Apps', () => __awaiter(this, void 0, void 0, function* () {
                 const apps = core.getInput('apps').split(' ');
                 if (apps.length) {
                     const coursierBinDir = path.join(os.homedir(), 'cs', 'bin');
@@ -185,7 +185,6 @@ function run() {
                     yield cs('install', ...apps);
                 }
             }));
-            Promise.all([installJVM, installApps]);
         }
         catch (error) {
             core.setFailed(error.message);
