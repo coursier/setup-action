@@ -19,25 +19,35 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
   return output.trim()
 }
 
-function coursierDownloadUrl(): string {
+async function downloadCoursier(): Promise<string> {
+  let csBinary = ''
   switch (process.platform) {
     case 'linux':
-      return 'https://git.io/coursier-cli-linux'
+      csBinary = await tc.downloadTool('https://git.io/coursier-cli-linux')
+      break
     case 'darwin':
-      return 'https://git.io/coursier-cli-macos'
-    case 'win32':
-      return 'https://git.io/coursier-cli-windows-exe'
+      csBinary = await tc.downloadTool('https://git.io/coursier-cli-macos')
+      break
+    case 'win32': {
+      const guid = await tc.downloadTool('https://git.io/coursier-cli-windows-exe')
+      const exe = `${guid}.exe`
+      await cli.exec('mv', [guid, exe])
+      csBinary = exe
+      break
+    }
     default:
       core.setFailed(`Unknown process.platform: ${process.platform}`)
   }
-  return ''
+  if (!csBinary) core.setFailed(`Couldn't download Coursier`)
+  await cli.exec('chmod', ['+x', csBinary])
+  return csBinary
 }
 
 async function cs(...args: string[]): Promise<string> {
   if (!tc.find('cs', coursierVersionSpec)) {
-    const csBinary = await tc.downloadTool(coursierDownloadUrl())
-    await cli.exec('chmod', ['+x', csBinary])
+    const csBinary = await downloadCoursier()
     const version = await execOutput(csBinary, '--version')
+    // const binaryName = process.platform == 'win32' ? 'cs.exe' : 'cs'
     const csCached = await tc.cacheFile(csBinary, 'cs', 'cs', version)
     await cli.exec('ls', ['-al', csCached])
     core.addPath(csCached)

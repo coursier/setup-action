@@ -117,25 +117,38 @@ function execOutput(cmd, ...args) {
         return output.trim();
     });
 }
-function coursierDownloadUrl() {
-    switch (process.platform) {
-        case 'linux':
-            return 'https://git.io/coursier-cli-linux';
-        case 'darwin':
-            return 'https://git.io/coursier-cli-macos';
-        case 'win32':
-            return 'https://git.io/coursier-cli-windows-exe';
-        default:
-            core.setFailed(`Unknown process.platform: ${process.platform}`);
-    }
-    return '';
+function downloadCoursier() {
+    return __awaiter(this, void 0, void 0, function* () {
+        let csBinary = '';
+        switch (process.platform) {
+            case 'linux':
+                csBinary = yield tc.downloadTool('https://git.io/coursier-cli-linux');
+                break;
+            case 'darwin':
+                csBinary = yield tc.downloadTool('https://git.io/coursier-cli-macos');
+                break;
+            case 'win32': {
+                const guid = yield tc.downloadTool('https://git.io/coursier-cli-windows-exe');
+                const exe = `${guid}.exe`;
+                yield cli.exec('mv', [guid, exe]);
+                csBinary = exe;
+                break;
+            }
+            default:
+                core.setFailed(`Unknown process.platform: ${process.platform}`);
+        }
+        if (!csBinary)
+            core.setFailed(`Couldn't download Coursier`);
+        yield cli.exec('chmod', ['+x', csBinary]);
+        return csBinary;
+    });
 }
 function cs(...args) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!tc.find('cs', coursierVersionSpec)) {
-            const csBinary = yield tc.downloadTool(coursierDownloadUrl());
-            yield cli.exec('chmod', ['+x', csBinary]);
+            const csBinary = yield downloadCoursier();
             const version = yield execOutput(csBinary, '--version');
+            // const binaryName = process.platform == 'win32' ? 'cs.exe' : 'cs'
             const csCached = yield tc.cacheFile(csBinary, 'cs', 'cs', version);
             yield cli.exec('ls', ['-al', csCached]);
             core.addPath(csCached);
