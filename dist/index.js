@@ -119,16 +119,17 @@ function execOutput(cmd, ...args) {
 }
 function downloadCoursier() {
     return __awaiter(this, void 0, void 0, function* () {
+        const baseUrl = 'https://git.io/coursier-cli';
         let csBinary = '';
         switch (process.platform) {
             case 'linux':
-                csBinary = yield tc.downloadTool('https://git.io/coursier-cli-linux');
+                csBinary = yield tc.downloadTool(`${baseUrl}-linux`);
                 break;
             case 'darwin':
-                csBinary = yield tc.downloadTool('https://git.io/coursier-cli-macos');
+                csBinary = yield tc.downloadTool(`${baseUrl}-macos`);
                 break;
             case 'win32': {
-                const guid = yield tc.downloadTool('https://git.io/coursier-cli-windows-exe');
+                const guid = yield tc.downloadTool(`${baseUrl}-windows-exe`);
                 const exe = `${guid}.exe`;
                 yield cli.exec('mv', [guid, exe]);
                 csBinary = exe;
@@ -150,7 +151,6 @@ function cs(...args) {
             const version = yield execOutput(csBinary, '--version');
             const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs';
             const csCached = yield tc.cacheFile(csBinary, binaryName, 'cs', version);
-            yield cli.exec('ls', ['-al', csCached]);
             core.addPath(csCached);
         }
         return execOutput('cs', ...args);
@@ -179,7 +179,7 @@ function run() {
             yield core.group('Install Apps', () => __awaiter(this, void 0, void 0, function* () {
                 const apps = core.getInput('apps').split(' ');
                 if (apps.length) {
-                    const coursierBinDir = path.join(os.homedir(), 'cs-bin');
+                    const coursierBinDir = path.join(os.homedir(), 'cs', 'bin');
                     core.exportVariable('COURSIER_BIN_DIR', coursierBinDir);
                     core.addPath(coursierBinDir);
                     yield cs('install', ...apps);

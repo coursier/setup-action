@@ -20,16 +20,17 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
 }
 
 async function downloadCoursier(): Promise<string> {
+  const baseUrl = 'https://git.io/coursier-cli'
   let csBinary = ''
   switch (process.platform) {
     case 'linux':
-      csBinary = await tc.downloadTool('https://git.io/coursier-cli-linux')
+      csBinary = await tc.downloadTool(`${baseUrl}-linux`)
       break
     case 'darwin':
-      csBinary = await tc.downloadTool('https://git.io/coursier-cli-macos')
+      csBinary = await tc.downloadTool(`${baseUrl}-macos`)
       break
     case 'win32': {
-      const guid = await tc.downloadTool('https://git.io/coursier-cli-windows-exe')
+      const guid = await tc.downloadTool(`${baseUrl}-windows-exe`)
       const exe = `${guid}.exe`
       await cli.exec('mv', [guid, exe])
       csBinary = exe
@@ -49,7 +50,6 @@ async function cs(...args: string[]): Promise<string> {
     const version = await execOutput(csBinary, '--version')
     const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs'
     const csCached = await tc.cacheFile(csBinary, binaryName, 'cs', version)
-    await cli.exec('ls', ['-al', csCached])
     core.addPath(csCached)
   }
   return execOutput('cs', ...args)
@@ -78,7 +78,7 @@ async function run(): Promise<void> {
     await core.group('Install Apps', async () => {
       const apps: string[] = core.getInput('apps').split(' ')
       if (apps.length) {
-        const coursierBinDir = path.join(os.homedir(), 'cs-bin')
+        const coursierBinDir = path.join(os.homedir(), 'cs', 'bin')
         core.exportVariable('COURSIER_BIN_DIR', coursierBinDir)
         core.addPath(coursierBinDir)
         await cs('install', ...apps)
