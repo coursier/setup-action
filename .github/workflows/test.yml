@@ -7,7 +7,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        jvm: ['', 'openjdk:11']
+        jvm: ['', 'adopt:1.8']
     steps:
     - uses: actions/checkout@v2
     # create an sbt file to enabling sbt caching
@@ -16,7 +16,7 @@ jobs:
       uses: ./
       with:
         jvm: ${{ matrix.jvm }}
-        apps: sbt sbtn ammonite bloop
+        apps: sbt sbtn
     # - uses: coursier/cache-action@v5
     - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
     - run: echo $PATH
@@ -24,7 +24,3 @@ jobs:
     - run: echo $JAVA_HOME
     - run: java -version
     - run: cs java -version
-    # test installed apps
-    - run: sbtn show name
-    - run: amm --help
-    - run: bloop about
