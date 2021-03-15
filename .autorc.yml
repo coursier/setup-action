@@ -1,6 +1,8 @@
 plugins:
   - git-tag
   - released
+  - - omit-commits
+    - subject: 'build: update dist'
 latest:
   noChangelog: true
 shipit:
