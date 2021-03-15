@@ -42,7 +42,7 @@ jobs:
 
       - name: Commit updated build
         run: |
-          git add --force dist
+          git add --force dist/ package-lock.json
           git status
           git commit -m 'build: update dist'
           git log -1
