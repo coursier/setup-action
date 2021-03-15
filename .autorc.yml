@@ -1,0 +1,39 @@
+plugins:
+  - git-tag
+  - released
+latest:
+  noChangelog: true
+shipit:
+  noChangelog: true
+labels:
+  - name: major
+    changelogTitle: '💥 Breaking Changes'
+    description: 'Increment the major version when merged'
+    releaseType: major
+  - name: minor
+    changelogTitle: '🚀 Enhancements'
+    description: 'Increment the minor version when merged'
+    releaseType: minor
+  - name: patch
+    changelogTitle: '🐛 Patches'
+    description: 'Increment the patch version when merged'
+    releaseType: patch
+  - name: internal
+    changelogTitle: '🏠 Internal'
+    description: 'Changes only affect the internal API'
+    releaseType: none
+  - name: documentation
+    changelogTitle: '📝 Documentation'
+    description: 'Changes only affect the documentation'
+    releaseType: none
+  - name: tests
+    changelogTitle: '🧪 Tests'
+    description: 'Add or improve existing tests'
+    releaseType: none
+  - name: dependencies
+    changelogTitle: '📦 Dependency Updates'
+    description: 'Update one or more dependencies version'
+    releaseType: none
+  - name: skip-release
+    description: 'Preserve the current version when merged'
+    releaseType: skip

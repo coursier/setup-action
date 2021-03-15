@@ -12,8 +12,8 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
     listeners: {
       stdout: (data: Buffer) => {
         output += data.toString()
-      }
-    }
+      },
+    },
   }
   await cli.exec(cmd, args.filter(Boolean), options)
   return output.trim()

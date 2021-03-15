@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: git fetch --unshallow --tags
+
+      - name: Generate token
+        id: generate-token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: 103842
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+      - run: |
+          echo "GH_TOKEN=${{ steps.generate-token.outputs.token }}" >> $GITHUB_ENV
+          git config --global user.name "laughedelic[bot]"
+          git config --global user.email "103842+laughedelic[bot]@users.noreply.github.com"
+
+      - name: Install Auto
+        run: |
+          gh release download -R intuit/auto -p auto-linux.gz -D $HOME
+          gunzip -c $HOME/auto-linux.gz > $HOME/auto
+          chmod a+x $HOME/auto
+          echo $HOME >> $GITHUB_PATH
+
+      - name: Update release branch
+        run: |
+          git checkout release/v1
+          git merge main
+
+      - name: Build
+        run: |
+          npm install
+          npm run all
+
+      - name: Commit updated build
+        run: |
+          git add --force dist
+          git status
+          git commit -m 'build: update dist'
+          git log -1
+
+      - name: Create Release
+        run: |
+          auto latest --base-branch release/v1
