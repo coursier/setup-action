@@ -10,7 +10,6 @@ labels:
     changelogTitle: '💥 Breaking Changes'
     description: 'Increment the major version when merged'
     releaseType: major
-    override: true
   - name: minor
     changelogTitle: '🚀 Enhancements'
     description: 'Increment the minor version when merged'
