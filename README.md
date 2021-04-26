@@ -43,6 +43,6 @@ This action should work well with the official Coursier [cache-action](https://g
 ```yml
   steps:
     - uses: actions/checkout@v2
+    - uses: coursier/cache-action@v6
     - uses: laughedelic/coursier-setup@v1
-    - uses: coursier/cache-action@v5
 ```
