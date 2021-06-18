@@ -26,7 +26,7 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
 ```yml
   steps:
     - uses: actions/checkout@v2
-    - uses: laughedelic/coursier-setup@v1
+    - uses: coursier/setup-action@v1
       with:
         jvm: adopt:11
         apps: sbtn bloop ammonite
@@ -44,5 +44,5 @@ This action should work well with the official Coursier [cache-action](https://g
   steps:
     - uses: actions/checkout@v2
     - uses: coursier/cache-action@v6
-    - uses: laughedelic/coursier-setup@v1
+    - uses: coursier/setup-action@v1
 ```
