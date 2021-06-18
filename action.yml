@@ -1,4 +1,4 @@
-name: 'coursier-setup'
+name: 'coursier-setup-action'
 description: 'Use Coursier to install JVM and Scala apps'
 author: 'Alexey Alekhin'
 branding:
