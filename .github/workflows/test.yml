@@ -16,6 +16,10 @@ jobs:
         jvm: ['', 'openjdk:11']
     steps:
     - uses: actions/checkout@v2
+    - run: |
+        npm install
+    - run: |
+        npm run all
     # create an sbt file to enabling sbt caching
     - run: echo 'name := "foo"' > build.sbt
     - id: cs-setup
