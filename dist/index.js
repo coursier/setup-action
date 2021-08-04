@@ -84,7 +84,11 @@ function downloadCoursier() {
 }
 function cs(...args) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (!tc.find('cs', coursierVersionSpec)) {
+        const previous = tc.find('cs', coursierVersionSpec);
+        if (previous) {
+            core.addPath(previous);
+        }
+        else {
             const csBinary = yield downloadCoursier();
             const version = yield execOutput(csBinary, '--version');
             const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs';
