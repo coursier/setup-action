@@ -45,7 +45,10 @@ async function downloadCoursier(): Promise<string> {
 }
 
 async function cs(...args: string[]): Promise<string> {
-  if (!tc.find('cs', coursierVersionSpec)) {
+  const previous = tc.find('cs', coursierVersionSpec)
+  if (previous) {
+    core.addPath(previous)
+  } else {
     const csBinary = await downloadCoursier()
     const version = await execOutput(csBinary, '--version')
     const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs'
