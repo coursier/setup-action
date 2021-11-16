@@ -40,7 +40,8 @@ const cli = __importStar(__nccwpck_require__(514));
 const tc = __importStar(__nccwpck_require__(784));
 const path = __importStar(__nccwpck_require__(622));
 const os = __importStar(__nccwpck_require__(87));
-const coursierVersionSpec = `^2.0`;
+const csVersion = '2.0.16-200-ge888c6dea';
+const coursierVersionSpec = csVersion;
 function execOutput(cmd, ...args) {
     return __awaiter(this, void 0, void 0, function* () {
         let output = '';
@@ -57,20 +58,28 @@ function execOutput(cmd, ...args) {
 }
 function downloadCoursier() {
     return __awaiter(this, void 0, void 0, function* () {
-        const baseUrl = 'https://git.io/coursier-cli';
+        const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}/cs-x86_64`;
         let csBinary = '';
         switch (process.platform) {
-            case 'linux':
-                csBinary = yield tc.downloadTool(`${baseUrl}-linux`);
+            case 'linux': {
+                const guid = yield tc.downloadTool(`${baseUrl}-pc-linux.gz`);
+                const arc = `${guid}.gz`;
+                yield cli.exec('mv', [guid, arc]);
+                csBinary = arc;
                 break;
-            case 'darwin':
-                csBinary = yield tc.downloadTool(`${baseUrl}-macos`);
+            }
+            case 'darwin': {
+                const guid = yield tc.downloadTool(`${baseUrl}-apple-darwin.gz`);
+                const arc = `${guid}.gz`;
+                yield cli.exec('mv', [guid, arc]);
+                csBinary = arc;
                 break;
+            }
             case 'win32': {
-                const guid = yield tc.downloadTool(`${baseUrl}-windows-exe`);
-                const exe = `${guid}.exe`;
-                yield cli.exec('mv', [guid, exe]);
-                csBinary = exe;
+                const guid = yield tc.downloadTool(`${baseUrl}-pc-win32.zip`);
+                const arc = `${guid}.zip`;
+                yield cli.exec('mv', [guid, arc]);
+                csBinary = arc;
                 break;
             }
             default:
@@ -78,6 +87,15 @@ function downloadCoursier() {
         }
         if (!csBinary)
             core.setFailed(`Couldn't download Coursier`);
+        if (csBinary.endsWith('.gz')) {
+            yield cli.exec('gzip', ['-d', csBinary]);
+            csBinary = csBinary.slice(0, csBinary.length - '.gz'.length);
+        }
+        if (csBinary.endsWith('.zip')) {
+            const destDir = csBinary.slice(0, csBinary.length - '.zip'.length);
+            yield cli.exec('unzip', ['-j', csBinary, 'cs-x86_64-pc-win32.exe', '-d', destDir]);
+            csBinary = `${destDir}\\cs-x86_64-pc-win32.exe`;
+        }
         yield cli.exec('chmod', ['+x', csBinary]);
         return csBinary;
     });
@@ -90,9 +108,8 @@ function cs(...args) {
         }
         else {
             const csBinary = yield downloadCoursier();
-            const version = yield execOutput(csBinary, '--version');
             const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs';
-            const csCached = yield tc.cacheFile(csBinary, binaryName, 'cs', version);
+            const csCached = yield tc.cacheFile(csBinary, binaryName, 'cs', csVersion);
             core.addPath(csCached);
         }
         return execOutput('cs', ...args);
@@ -102,8 +119,8 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             yield core.group('Install Coursier', () => __awaiter(this, void 0, void 0, function* () {
-                const version = yield cs('--version');
-                core.setOutput('cs-version', version);
+                yield cs('--help');
+                core.setOutput('cs-version', csVersion);
             }));
             yield core.group('Install JVM', () => __awaiter(this, void 0, void 0, function* () {
                 const jvmInput = core.getInput('jvm');
