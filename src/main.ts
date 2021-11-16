@@ -4,7 +4,8 @@ import * as tc from '@actions/tool-cache'
 import * as path from 'path'
 import * as os from 'os'
 
-const coursierVersionSpec = `^2.0`
+const csVersion = '2.0.16-200-ge888c6dea'
+const coursierVersionSpec = csVersion
 
 async function execOutput(cmd: string, ...args: string[]): Promise<string> {
   let output = ''
@@ -20,26 +21,43 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
 }
 
 async function downloadCoursier(): Promise<string> {
-  const baseUrl = 'https://git.io/coursier-cli'
+  const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}/cs-x86_64`
   let csBinary = ''
   switch (process.platform) {
-    case 'linux':
-      csBinary = await tc.downloadTool(`${baseUrl}-linux`)
+    case 'linux': {
+      const guid = await tc.downloadTool(`${baseUrl}-pc-linux.gz`)
+      const arc = `${guid}.gz`
+      await cli.exec('mv', [guid, arc])
+      csBinary = arc
       break
-    case 'darwin':
-      csBinary = await tc.downloadTool(`${baseUrl}-macos`)
+    }
+    case 'darwin': {
+      const guid = await tc.downloadTool(`${baseUrl}-apple-darwin.gz`)
+      const arc = `${guid}.gz`
+      await cli.exec('mv', [guid, arc])
+      csBinary = arc
       break
+    }
     case 'win32': {
-      const guid = await tc.downloadTool(`${baseUrl}-windows-exe`)
-      const exe = `${guid}.exe`
-      await cli.exec('mv', [guid, exe])
-      csBinary = exe
+      const guid = await tc.downloadTool(`${baseUrl}-pc-win32.zip`)
+      const arc = `${guid}.zip`
+      await cli.exec('mv', [guid, arc])
+      csBinary = arc
       break
     }
     default:
       core.setFailed(`Unknown process.platform: ${process.platform}`)
   }
   if (!csBinary) core.setFailed(`Couldn't download Coursier`)
+  if (csBinary.endsWith('.gz')) {
+    await cli.exec('gzip', ['-d', csBinary])
+    csBinary = csBinary.slice(0, csBinary.length - '.gz'.length)
+  }
+  if (csBinary.endsWith('.zip')) {
+    const destDir = csBinary.slice(0, csBinary.length - '.zip'.length)
+    await cli.exec('unzip', ['-j', csBinary, 'cs-x86_64-pc-win32.exe', '-d', destDir])
+    csBinary = `${destDir}\\cs-x86_64-pc-win32.exe`
+  }
   await cli.exec('chmod', ['+x', csBinary])
   return csBinary
 }
@@ -50,9 +68,8 @@ async function cs(...args: string[]): Promise<string> {
     core.addPath(previous)
   } else {
     const csBinary = await downloadCoursier()
-    const version = await execOutput(csBinary, '--version')
     const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs'
-    const csCached = await tc.cacheFile(csBinary, binaryName, 'cs', version)
+    const csCached = await tc.cacheFile(csBinary, binaryName, 'cs', csVersion)
     core.addPath(csCached)
   }
   return execOutput('cs', ...args)
@@ -61,8 +78,8 @@ async function cs(...args: string[]): Promise<string> {
 async function run(): Promise<void> {
   try {
     await core.group('Install Coursier', async () => {
-      const version = await cs('--version')
-      core.setOutput('cs-version', version)
+      await cs('--help')
+      core.setOutput('cs-version', csVersion)
     })
 
     await core.group('Install JVM', async () => {
