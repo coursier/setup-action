@@ -84,7 +84,7 @@ async function run(): Promise<void> {
         const coursierBinDir = path.join(os.homedir(), 'cs', 'bin')
         core.exportVariable('COURSIER_BIN_DIR', coursierBinDir)
         core.addPath(coursierBinDir)
-        await cs('install', ...apps)
+        await cs('install', '--contrib', ...apps)
       }
     })
   } catch (error) {
