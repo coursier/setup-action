@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        jvm: ['', 'openjdk:11']
+        jvm: ['8', '11']
     steps:
     - uses: actions/checkout@v2
     - run: |
@@ -35,6 +35,10 @@ jobs:
     - run: java -version
     - run: cs java -version
     # test installed apps
+    - run: sbtn.bat show name </dev/null
+      shell: bash
+      if: runner.os == 'Windows'
     - run: sbtn show name
+      if: runner.os != 'Windows'
     - run: amm --help
     - run: bloop about
