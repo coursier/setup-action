@@ -4,7 +4,7 @@ import * as os from 'os'
 import * as path from 'path'
 import * as tc from '@actions/tool-cache'
 
-const csVersion = '2.0.16-200-ge888c6dea'
+const csVersion = '2.1.0-M3'
 const coursierVersionSpec = csVersion
 
 async function execOutput(cmd: string, ...args: string[]): Promise<string> {
