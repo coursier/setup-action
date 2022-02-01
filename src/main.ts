@@ -1,8 +1,8 @@
-import * as core from '@actions/core'
 import * as cli from '@actions/exec'
-import * as tc from '@actions/tool-cache'
-import * as path from 'path'
+import * as core from '@actions/core'
 import * as os from 'os'
+import * as path from 'path'
+import * as tc from '@actions/tool-cache'
 
 const csVersion = '2.0.16-200-ge888c6dea'
 const coursierVersionSpec = csVersion
