@@ -26,7 +26,7 @@ jobs:
       uses: ./
       with:
         jvm: ${{ matrix.jvm }}
-        apps: sbt sbtn ammonite bloop
+        apps: sbt sbtn ammonite bloop:1.4.11
     # - uses: coursier/cache-action@v5
     - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
     - run: echo $PATH
