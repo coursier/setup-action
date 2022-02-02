@@ -104,7 +104,7 @@ async function run(): Promise<void> {
         await cs('install', '--contrib', ...apps)
       }
     })
-  } catch (error) {
+  } catch (error: any) {
     core.setFailed(error.message)
   }
 }
