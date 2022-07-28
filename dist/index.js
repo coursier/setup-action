@@ -142,8 +142,9 @@ function run() {
                 }
             }));
             yield core.group('Install Apps', () => __awaiter(this, void 0, void 0, function* () {
-                const apps = core.getInput('apps').split(' ');
-                if (apps.length) {
+                const value = core.getInput('apps').trim();
+                const apps = value.split(' ');
+                if (value && apps.length) {
                     const coursierBinDir = path.join(os.homedir(), 'cs', 'bin');
                     core.exportVariable('COURSIER_BIN_DIR', coursierBinDir);
                     core.addPath(coursierBinDir);
