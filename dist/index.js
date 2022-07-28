@@ -44,7 +44,9 @@ const core = __importStar(__nccwpck_require__(186));
 const os = __importStar(__nccwpck_require__(37));
 const path = __importStar(__nccwpck_require__(17));
 const tc = __importStar(__nccwpck_require__(784));
-const csVersion = '2.1.0-M5';
+let csVersion = core.getInput("version");
+if (!csVersion)
+    csVersion = '2.1.0-M6-28-gbad85693f';
 const coursierVersionSpec = csVersion;
 function execOutput(cmd, ...args) {
     return __awaiter(this, void 0, void 0, function* () {
