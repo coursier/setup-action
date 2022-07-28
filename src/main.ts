@@ -98,8 +98,9 @@ async function run(): Promise<void> {
     })
 
     await core.group('Install Apps', async () => {
-      const apps: string[] = core.getInput('apps').split(' ')
-      if (apps.length) {
+      const value = core.getInput('apps').trim()
+      const apps: string[] = value.split(' ')
+      if (value && apps.length) {
         const coursierBinDir = path.join(os.homedir(), 'cs', 'bin')
         core.exportVariable('COURSIER_BIN_DIR', coursierBinDir)
         core.addPath(coursierBinDir)
