@@ -4,7 +4,10 @@ import * as os from 'os'
 import * as path from 'path'
 import * as tc from '@actions/tool-cache'
 
-const csVersion = '2.1.0-M5'
+let csVersion = core.getInput("version")
+if (!csVersion)
+  csVersion = '2.1.0-M5'
+
 const coursierVersionSpec = csVersion
 
 async function execOutput(cmd: string, ...args: string[]): Promise<string> {
