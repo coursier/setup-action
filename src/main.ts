@@ -6,7 +6,7 @@ import * as tc from '@actions/tool-cache'
 
 let csVersion = core.getInput("version")
 if (!csVersion)
-  csVersion = '2.1.0-M5'
+  csVersion = '2.1.0-M6-28-gbad85693f'
 
 const coursierVersionSpec = csVersion
 
