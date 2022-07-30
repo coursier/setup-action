@@ -44,7 +44,9 @@ const core = __importStar(__nccwpck_require__(186));
 const os = __importStar(__nccwpck_require__(37));
 const path = __importStar(__nccwpck_require__(17));
 const tc = __importStar(__nccwpck_require__(784));
-const csVersion = '2.1.0-M5';
+let csVersion = core.getInput('version');
+if (!csVersion)
+    csVersion = '2.1.0-M6-28-gbad85693f';
 const coursierVersionSpec = csVersion;
 function execOutput(cmd, ...args) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -140,8 +142,9 @@ function run() {
                 }
             }));
             yield core.group('Install Apps', () => __awaiter(this, void 0, void 0, function* () {
-                const apps = core.getInput('apps').split(' ');
-                if (apps.length) {
+                const value = core.getInput('apps').trim();
+                const apps = value.split(' ');
+                if (value && apps.length) {
                     const coursierBinDir = path.join(os.homedir(), 'cs', 'bin');
                     core.exportVariable('COURSIER_BIN_DIR', coursierBinDir);
                     core.addPath(coursierBinDir);
