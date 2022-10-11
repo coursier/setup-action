@@ -9,8 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: npm install
-      - run: npm run all
+      - name: Build
+        run: |
+          nvm use lts/gallium
+          npm install
+          npm run all
       - name: Create Pull Request
         id: cpr
         uses: peter-evans/create-pull-request@v4

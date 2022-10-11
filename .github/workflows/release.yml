@@ -37,6 +37,7 @@ jobs:
 
       - name: Build
         run: |
+          nvm use lts/gallium
           npm install
           npm run all
 
