@@ -36,7 +36,9 @@ jobs:
           git merge main
 
       - name: Build
+        shell: bash -l {0}
         run: |
+          nvm use lts/gallium
           npm install
           npm run all
 

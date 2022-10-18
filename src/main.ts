@@ -107,8 +107,9 @@ async function run(): Promise<void> {
         await cs('install', '--contrib', ...apps)
       }
     })
-  } catch (error: any) {
-    core.setFailed(error.message)
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
+    core.setFailed(msg)
   }
 }
 

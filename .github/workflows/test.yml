@@ -14,10 +14,14 @@ jobs:
         jvm: ['8', '11']
     steps:
     - uses: actions/checkout@v3
-    - run: |
+
+    - name: Build
+      shell: bash -l {0}
+      run: |
+        nvm use lts/gallium
         npm install
-    - run: |
         npm run all
+
     # create an sbt file to enabling sbt caching
     - run: echo 'name := "foo"' > build.sbt
     - id: cs-setup
@@ -25,13 +29,16 @@ jobs:
       with:
         jvm: ${{ matrix.jvm }}
         apps: sbt sbtn ammonite bloop:1.4.11
+
     # - uses: coursier/cache-action@v5
     - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
     - run: echo $PATH
+
     # test Java
     - run: echo $JAVA_HOME
     - run: java -version
     - run: cs java -version
+
     # test installed apps
     - run: sbtn.bat show name </dev/null
       shell: bash
