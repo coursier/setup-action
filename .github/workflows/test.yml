@@ -12,6 +12,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
         jvm: ['8', '11']
+        architecture: ['x86_64', 'aarch6']
     steps:
     - uses: actions/checkout@v3
 
@@ -29,6 +30,7 @@ jobs:
       with:
         jvm: ${{ matrix.jvm }}
         apps: sbt sbtn ammonite bloop:1.4.11
+        architecture: ${{ matrix.architecture }}
 
     # - uses: coursier/cache-action@v5
     - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
