@@ -4,15 +4,15 @@ import * as os from 'os'
 import * as path from 'path'
 import * as tc from '@actions/tool-cache'
 
-const csVersion = core.getInput('version') || '2.1.0-M7-39-gb8f3d7532'
-
 const validArchitectures = Object.freeze(['x86_64', 'aarch6'])
+
+const csVersion = core.getInput('version') || '2.1.0-M7-39-gb8f3d7532'
 const architecture = core.getInput('architecture') || validArchitectures[0]
 
 const coursierVersionSpec = csVersion
 
 function isValidArchitecture(arch: string): Boolean {
-  return validArchitectures.includes(architecture)
+  return validArchitectures.includes(arch)
 }
 
 async function execOutput(cmd: string, ...args: string[]): Promise<string> {
@@ -86,8 +86,10 @@ async function cs(...args: string[]): Promise<string> {
 async function run(): Promise<void> {
   try {
     if (!isValidArchitecture(architecture)) {
-      core.setFailed(`Invalid architecture specified. Valid options are: ${validArchitectures.join(', ')}`)
-      return      
+      core.setFailed(
+        `Invalid architecture specified. Valid options are: ${validArchitectures.join(', ')}`,
+      )
+      return
     }
 
     await core.group('Install Coursier', async () => {
