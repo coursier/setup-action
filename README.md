@@ -32,6 +32,7 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
       with:
         jvm: adopt:11
         apps: sbtn bloop ammonite
+        architecture: aarch64
 ```
 
 ## Outputs
