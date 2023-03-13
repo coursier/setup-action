@@ -10,9 +10,9 @@ const coursierVersionSpec = csVersion
 
 function getCoursierArchitecture(): string {
   if (process.arch === 'x64') {
-    return 'x86_64';
+    return 'x86_64'
   } else if (process.arch === 'arm' || process.arch === 'arm64') {
-    return 'aarch64';
+    return 'aarch64'
   } else {
     throw new Error(`Coursier does not have support for the ${process.arch} architecture`)
   }
