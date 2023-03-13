@@ -32,7 +32,7 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
 }
 
 async function downloadCoursier(): Promise<string> {
-  const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}/cs-x86_64`
+  const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}/cs-${architecture}`
   let csBinary = ''
   switch (process.platform) {
     case 'linux': {
