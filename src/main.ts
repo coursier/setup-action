@@ -4,8 +4,17 @@ import * as os from 'os'
 import * as path from 'path'
 import * as tc from '@actions/tool-cache'
 
-let csVersion = core.getInput('version')
-if (!csVersion) csVersion = '2.1.0-M7-39-gb8f3d7532'
+
+const csVersion = core.getInput('version') || '2.1.0-M7-39-gb8f3d7532'
+
+const validArchitectures = Object.freeze([
+  'x86_64',
+  'aarch6'
+])
+const architecture = core.getInput('architecture') || validArchitectures[0];
+if (!validArchitectures.includes(architecture)) {
+  throw new Error(`Invalid architecture specified. Valid options are: ${validArchitectures.join(', ')}`);
+}
 
 const coursierVersionSpec = csVersion
 
