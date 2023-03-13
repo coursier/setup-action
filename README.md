@@ -20,8 +20,6 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
   - if left empty either the existing JVM will be used or Coursier will install its default JVM.
 - `apps` (optional): Scala apps to install (`sbtn` by default)
   - space separated list of app names (from the [main channel](https://github.com/coursier/apps))
-- `architecture` (optional): Coursier architecture to install binaries for
-  - valid values: `x86_64`, `aarch6` (defaults to `x86_64`)
 
 ### Example with custom inputs
 
