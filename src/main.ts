@@ -66,8 +66,8 @@ async function downloadCoursier(): Promise<string> {
   }
   if (csBinary.endsWith('.zip')) {
     const destDir = csBinary.slice(0, csBinary.length - '.zip'.length)
-    await cli.exec('unzip', ['-j', csBinary, 'cs-x86_64-pc-win32.exe', '-d', destDir])
-    csBinary = `${destDir}\\cs-x86_64-pc-win32.exe`
+    await cli.exec('unzip', ['-j', csBinary, `cs-${architecture}-pc-win32.exe`, '-d', destDir])
+    csBinary = `${destDir}\\cs-${architecture}-pc-win32.exe`
   }
   await cli.exec('chmod', ['+x', csBinary])
   return csBinary
