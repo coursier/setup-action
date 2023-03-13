@@ -17,10 +17,6 @@ inputs:
     description: 'Coursier version to install'
     required: false
     default: ''
-  architecture:
-    description: 'Coursier architecture to install'
-    required: false
-    default: ''
 outputs:
   cs-version:
     description: 'Version of the installed Coursier'
