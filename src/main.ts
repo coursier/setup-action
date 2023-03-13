@@ -34,23 +34,23 @@ async function downloadCoursier(): Promise<string> {
   switch (process.platform) {
     case 'linux': {
       const guid = await tc.downloadTool(`${baseUrl}-pc-linux.gz`)
-      const arc = `${guid}.gz`
-      await cli.exec('mv', [guid, arc])
-      csBinary = arc
+      const archive = `${guid}.gz`
+      await cli.exec('mv', [guid, archive])
+      csBinary = archive
       break
     }
     case 'darwin': {
       const guid = await tc.downloadTool(`${baseUrl}-apple-darwin.gz`)
-      const arc = `${guid}.gz`
-      await cli.exec('mv', [guid, arc])
-      csBinary = arc
+      const archive = `${guid}.gz`
+      await cli.exec('mv', [guid, archive])
+      csBinary = archive
       break
     }
     case 'win32': {
       const guid = await tc.downloadTool(`${baseUrl}-pc-win32.zip`)
-      const arc = `${guid}.zip`
-      await cli.exec('mv', [guid, arc])
-      csBinary = arc
+      const archive = `${guid}.zip`
+      await cli.exec('mv', [guid, archive])
+      csBinary = archive
       break
     }
     default:
