@@ -4,15 +4,18 @@ import * as os from 'os'
 import * as path from 'path'
 import * as tc from '@actions/tool-cache'
 
-const validArchitectures = Object.freeze(['x86_64', 'aarch6'])
-
 const csVersion = core.getInput('version') || '2.1.0-M7-39-gb8f3d7532'
-const architecture = core.getInput('architecture') || validArchitectures[0]
 
 const coursierVersionSpec = csVersion
 
-function isValidArchitecture(arch: string): Boolean {
-  return validArchitectures.includes(arch)
+function getCoursierArchitecture(): string {
+  if (process.arch === 'x64') {
+    return 'x86_64';
+  } else if (process.arch === 'arm' || process.arch === 'arm64') {
+    return 'aarch64';
+  } else {
+    throw new Error(`Coursier does not have support for the ${process.arch} architecture`)
+  }
 }
 
 async function execOutput(cmd: string, ...args: string[]): Promise<string> {
@@ -29,6 +32,7 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
 }
 
 async function downloadCoursier(): Promise<string> {
+  const architecture = getCoursierArchitecture()
   const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}/cs-${architecture}`
   let csBinary = ''
   switch (process.platform) {
@@ -85,13 +89,6 @@ async function cs(...args: string[]): Promise<string> {
 
 async function run(): Promise<void> {
   try {
-    if (!isValidArchitecture(architecture)) {
-      core.setFailed(
-        `Invalid architecture specified. Valid options are: ${validArchitectures.join(', ')}`,
-      )
-      return
-    }
-
     await core.group('Install Coursier', async () => {
       await cs('--help')
       core.setOutput('cs-version', csVersion)
