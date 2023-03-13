@@ -44,13 +44,13 @@ const core = __importStar(__nccwpck_require__(2186));
 const os = __importStar(__nccwpck_require__(2037));
 const path = __importStar(__nccwpck_require__(1017));
 const tc = __importStar(__nccwpck_require__(7784));
-const csVersion = core.getInput('version') || '2.1.0-M7-39-gb8f3d7532';
 const validArchitectures = Object.freeze(['x86_64', 'aarch6']);
+const csVersion = core.getInput('version') || '2.1.0-M7-39-gb8f3d7532';
 const architecture = core.getInput('architecture') || validArchitectures[0];
-if (!validArchitectures.includes(architecture)) {
-    throw new Error(`Invalid architecture specified. Valid options are: ${validArchitectures.join(', ')}`);
-}
 const coursierVersionSpec = csVersion;
+function isValidArchitecture(arch) {
+    return validArchitectures.includes(arch);
+}
 function execOutput(cmd, ...args) {
     return __awaiter(this, void 0, void 0, function* () {
         let output = '';
@@ -127,6 +127,10 @@ function cs(...args) {
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            if (!isValidArchitecture(architecture)) {
+                core.setFailed(`Invalid architecture specified. Valid options are: ${validArchitectures.join(', ')}`);
+                return;
+            }
             yield core.group('Install Coursier', () => __awaiter(this, void 0, void 0, function* () {
                 yield cs('--help');
                 core.setOutput('cs-version', csVersion);
