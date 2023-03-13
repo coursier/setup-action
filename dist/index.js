@@ -44,9 +44,12 @@ const core = __importStar(__nccwpck_require__(2186));
 const os = __importStar(__nccwpck_require__(2037));
 const path = __importStar(__nccwpck_require__(1017));
 const tc = __importStar(__nccwpck_require__(7784));
-let csVersion = core.getInput('version');
-if (!csVersion)
-    csVersion = '2.1.0-M7-39-gb8f3d7532';
+const csVersion = core.getInput('version') || '2.1.0-M7-39-gb8f3d7532';
+const validArchitectures = Object.freeze(['x86_64', 'aarch6']);
+const architecture = core.getInput('architecture') || validArchitectures[0];
+if (!validArchitectures.includes(architecture)) {
+    throw new Error(`Invalid architecture specified. Valid options are: ${validArchitectures.join(', ')}`);
+}
 const coursierVersionSpec = csVersion;
 function execOutput(cmd, ...args) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -64,7 +67,7 @@ function execOutput(cmd, ...args) {
 }
 function downloadCoursier() {
     return __awaiter(this, void 0, void 0, function* () {
-        const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}/cs-x86_64`;
+        const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}/cs-${architecture}`;
         let csBinary = '';
         switch (process.platform) {
             case 'linux': {
@@ -99,8 +102,8 @@ function downloadCoursier() {
         }
         if (csBinary.endsWith('.zip')) {
             const destDir = csBinary.slice(0, csBinary.length - '.zip'.length);
-            yield cli.exec('unzip', ['-j', csBinary, 'cs-x86_64-pc-win32.exe', '-d', destDir]);
-            csBinary = `${destDir}\\cs-x86_64-pc-win32.exe`;
+            yield cli.exec('unzip', ['-j', csBinary, `cs-${architecture}-pc-win32.exe`, '-d', destDir]);
+            csBinary = `${destDir}\\cs-${architecture}-pc-win32.exe`;
         }
         yield cli.exec('chmod', ['+x', csBinary]);
         return csBinary;
