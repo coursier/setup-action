@@ -9,13 +9,11 @@ const csVersion = core.getInput('version') || '2.1.0-M7-39-gb8f3d7532'
 const validArchitectures = Object.freeze(['x86_64', 'aarch6'])
 const architecture = core.getInput('architecture') || validArchitectures[0]
 
-if (!validArchitectures.includes(architecture)) {
-  throw new Error(
-    `Invalid architecture specified. Valid options are: ${validArchitectures.join(', ')}`,
-  )
-}
-
 const coursierVersionSpec = csVersion
+
+function isValidArchitecture(arch: string): Boolean {
+  return validArchitectures.includes(architecture)
+}
 
 async function execOutput(cmd: string, ...args: string[]): Promise<string> {
   let output = ''
@@ -87,6 +85,11 @@ async function cs(...args: string[]): Promise<string> {
 
 async function run(): Promise<void> {
   try {
+    if (!isValidArchitecture(architecture)) {
+      core.setFailed(`Invalid architecture specified. Valid options are: ${validArchitectures.join(', ')}`)
+      return      
+    }
+
     await core.group('Install Coursier', async () => {
       await cs('--help')
       core.setOutput('cs-version', csVersion)
