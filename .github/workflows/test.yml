@@ -11,7 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        jvm: ['8', '11']
+        jvm: ['8', '17']
     steps:
     - uses: actions/checkout@v3
 
