@@ -4,10 +4,19 @@ import * as os from 'os'
 import * as path from 'path'
 import * as tc from '@actions/tool-cache'
 
-let csVersion = core.getInput('version')
-if (!csVersion) csVersion = '2.1.0-M7-39-gb8f3d7532'
+const csVersion = core.getInput('version') || '2.1.0-M7-39-gb8f3d7532'
 
 const coursierVersionSpec = csVersion
+
+function getCoursierArchitecture(): string {
+  if (process.arch === 'x64') {
+    return 'x86_64'
+  } else if (process.arch === 'arm' || process.arch === 'arm64') {
+    return 'aarch64'
+  } else {
+    throw new Error(`Coursier does not have support for the ${process.arch} architecture`)
+  }
+}
 
 async function execOutput(cmd: string, ...args: string[]): Promise<string> {
   let output = ''
@@ -23,28 +32,29 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
 }
 
 async function downloadCoursier(): Promise<string> {
-  const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}/cs-x86_64`
+  const architecture = getCoursierArchitecture()
+  const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}/cs-${architecture}`
   let csBinary = ''
   switch (process.platform) {
     case 'linux': {
       const guid = await tc.downloadTool(`${baseUrl}-pc-linux.gz`)
-      const arc = `${guid}.gz`
-      await cli.exec('mv', [guid, arc])
-      csBinary = arc
+      const archive = `${guid}.gz`
+      await cli.exec('mv', [guid, archive])
+      csBinary = archive
       break
     }
     case 'darwin': {
       const guid = await tc.downloadTool(`${baseUrl}-apple-darwin.gz`)
-      const arc = `${guid}.gz`
-      await cli.exec('mv', [guid, arc])
-      csBinary = arc
+      const archive = `${guid}.gz`
+      await cli.exec('mv', [guid, archive])
+      csBinary = archive
       break
     }
     case 'win32': {
       const guid = await tc.downloadTool(`${baseUrl}-pc-win32.zip`)
-      const arc = `${guid}.zip`
-      await cli.exec('mv', [guid, arc])
-      csBinary = arc
+      const archive = `${guid}.zip`
+      await cli.exec('mv', [guid, archive])
+      csBinary = archive
       break
     }
     default:
@@ -57,8 +67,8 @@ async function downloadCoursier(): Promise<string> {
   }
   if (csBinary.endsWith('.zip')) {
     const destDir = csBinary.slice(0, csBinary.length - '.zip'.length)
-    await cli.exec('unzip', ['-j', csBinary, 'cs-x86_64-pc-win32.exe', '-d', destDir])
-    csBinary = `${destDir}\\cs-x86_64-pc-win32.exe`
+    await cli.exec('unzip', ['-j', csBinary, `cs-${architecture}-pc-win32.exe`, '-d', destDir])
+    csBinary = `${destDir}\\cs-${architecture}-pc-win32.exe`
   }
   await cli.exec('chmod', ['+x', csBinary])
   return csBinary
