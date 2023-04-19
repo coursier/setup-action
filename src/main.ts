@@ -4,7 +4,7 @@ import * as os from 'os'
 import * as path from 'path'
 import * as tc from '@actions/tool-cache'
 
-const csVersion = core.getInput('version') || '2.1.0-M7-39-gb8f3d7532'
+const csVersion = core.getInput('version') || '2.1.2'
 
 const coursierVersionSpec = csVersion
 
