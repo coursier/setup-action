@@ -44,7 +44,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const os = __importStar(__nccwpck_require__(2037));
 const path = __importStar(__nccwpck_require__(1017));
 const tc = __importStar(__nccwpck_require__(7784));
-const csVersion = core.getInput('version') || '2.1.0-M7-39-gb8f3d7532';
+const csVersion = core.getInput('version') || '2.1.2';
 const coursierVersionSpec = csVersion;
 function getCoursierArchitecture() {
     if (process.arch === 'x64') {
