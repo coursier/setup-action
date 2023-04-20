@@ -4,9 +4,18 @@ import * as os from 'os'
 import * as path from 'path'
 import * as tc from '@actions/tool-cache'
 
-const csVersion = core.getInput('version') || '2.1.2'
-
-const coursierVersionSpec = csVersion
+const config = Object.freeze({
+  x86_64: {
+    csVersion: core.getInput('version') || '2.1.2',
+    coursierVersionSpec: core.getInput('version') || '2.1.2',
+    releasesDownloadBaseUrl: 'https://github.com/coursier/coursier/releases/download'
+  },
+  aarch64: {
+    csVersion: core.getInput('version') || '2.1.1',
+    coursierVersionSpec: core.getInput('version') || '2.1.1',
+    releasesDownloadBaseUrl: 'https://github.com/VirtusLab/coursier-m1/releases/download'
+  }
+})
 
 function getCoursierArchitecture(): string {
   if (process.arch === 'x64') {
