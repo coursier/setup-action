@@ -12,8 +12,8 @@ const architecture_aarch64 = 'aarch64'
 
 const architecture = getCoursierArchitecture()
 const csVersion = core.getInput('version') || (architecture == architecture_x86_64
-  ? architecture_x86_64
-  : architecture_aarch64
+  ? defaultVersion_x86_64
+  : defaultVersion_aarch64
 )
 const coursierVersionSpec = csVersion
 const coursierBinariesGithubRepository = (architecture == architecture_x86_64)
