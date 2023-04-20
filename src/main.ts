@@ -7,24 +7,24 @@ import * as tc from '@actions/tool-cache'
 const defaultVersion_x86_64 = '2.1.2'
 const defaultVersion_aarch64 = '2.1.1'
 
-const config = Object.freeze({
-  x86_64: {
-    csVersion: core.getInput('version') || defaultVersion_x86_64,
-    coursierVersionSpec: core.getInput('version') || defaultVersion_x86_64,
-    releasesDownloadBaseUrl: 'https://github.com/coursier/coursier/releases/download'
-  },
-  aarch64: {
-    csVersion: core.getInput('version') || defaultVersion_aarch64,
-    coursierVersionSpec: core.getInput('version') || defaultVersion_aarch64,
-    releasesDownloadBaseUrl: 'https://github.com/VirtusLab/coursier-m1/releases/download'
-  }
-})
+const architecture_x86_64 = 'x86_64'
+const architecture_aarch64 = 'aarch64'
+
+const architecture = getCoursierArchitecture()
+const csVersion = core.getInput('version') || (architecture == architecture_x86_64
+  ? architecture_x86_64
+  : architecture_aarch64
+)
+const coursierVersionSpec = csVersion
+const coursierBinariesGithubRepository = (architecture == architecture_x86_64)
+  ? 'https://github.com/coursier/coursier/'
+  : 'https://github.com/VirtusLab/coursier-m1/'
 
 function getCoursierArchitecture(): string {
   if (process.arch === 'x64') {
-    return 'x86_64'
+    return architecture_x86_64
   } else if (process.arch === 'arm' || process.arch === 'arm64') {
-    return 'aarch64'
+    return architecture_aarch64
   } else {
     throw new Error(`Coursier does not have support for the ${process.arch} architecture`)
   }
