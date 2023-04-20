@@ -44,7 +44,6 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
 }
 
 async function downloadCoursier(): Promise<string> {
-  const architecture = getCoursierArchitecture()
   const baseUrl = `${coursierBinariesGithubRepository}/releases/download/v${csVersion}/cs-${architecture}`
   let csBinary = ''
   switch (process.platform) {
