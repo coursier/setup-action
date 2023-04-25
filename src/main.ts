@@ -4,15 +4,27 @@ import * as os from 'os'
 import * as path from 'path'
 import * as tc from '@actions/tool-cache'
 
-const csVersion = core.getInput('version') || '2.1.2'
+const defaultVersion_x86_64 = '2.1.2'
+const defaultVersion_aarch64 = '2.1.1'
 
+const architecture_x86_64 = 'x86_64'
+const architecture_aarch64 = 'aarch64'
+
+const architecture = getCoursierArchitecture()
+const csVersion = core.getInput('version') || (architecture === architecture_x86_64
+  ? defaultVersion_x86_64
+  : defaultVersion_aarch64
+)
 const coursierVersionSpec = csVersion
+const coursierBinariesGithubRepository = (architecture === architecture_x86_64)
+  ? 'https://github.com/coursier/coursier/'
+  : 'https://github.com/VirtusLab/coursier-m1/'
 
 function getCoursierArchitecture(): string {
   if (process.arch === 'x64') {
-    return 'x86_64'
+    return architecture_x86_64
   } else if (process.arch === 'arm' || process.arch === 'arm64') {
-    return 'aarch64'
+    return architecture_aarch64
   } else {
     throw new Error(`Coursier does not have support for the ${process.arch} architecture`)
   }
@@ -32,8 +44,7 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
 }
 
 async function downloadCoursier(): Promise<string> {
-  const architecture = getCoursierArchitecture()
-  const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}/cs-${architecture}`
+  const baseUrl = `${coursierBinariesGithubRepository}/releases/download/v${csVersion}/cs-${architecture}`
   let csBinary = ''
   switch (process.platform) {
     case 'linux': {
