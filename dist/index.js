@@ -44,14 +44,24 @@ const core = __importStar(__nccwpck_require__(2186));
 const os = __importStar(__nccwpck_require__(2037));
 const path = __importStar(__nccwpck_require__(1017));
 const tc = __importStar(__nccwpck_require__(7784));
-const csVersion = core.getInput('version') || '2.1.2';
+const defaultVersion_x86_64 = '2.1.2';
+const defaultVersion_aarch64 = '2.1.1';
+const architecture_x86_64 = 'x86_64';
+const architecture_aarch64 = 'aarch64';
+const architecture = getCoursierArchitecture();
+const csVersion = core.getInput('version') || (architecture === architecture_x86_64
+    ? defaultVersion_x86_64
+    : defaultVersion_aarch64);
 const coursierVersionSpec = csVersion;
+const coursierBinariesGithubRepository = (architecture === architecture_x86_64)
+    ? 'https://github.com/coursier/coursier/'
+    : 'https://github.com/VirtusLab/coursier-m1/';
 function getCoursierArchitecture() {
     if (process.arch === 'x64') {
-        return 'x86_64';
+        return architecture_x86_64;
     }
     else if (process.arch === 'arm' || process.arch === 'arm64') {
-        return 'aarch64';
+        return architecture_aarch64;
     }
     else {
         throw new Error(`Coursier does not have support for the ${process.arch} architecture`);
@@ -73,8 +83,7 @@ function execOutput(cmd, ...args) {
 }
 function downloadCoursier() {
     return __awaiter(this, void 0, void 0, function* () {
-        const architecture = getCoursierArchitecture();
-        const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}/cs-${architecture}`;
+        const baseUrl = `${coursierBinariesGithubRepository}/releases/download/v${csVersion}/cs-${architecture}`;
         let csBinary = '';
         switch (process.platform) {
             case 'linux': {
