@@ -9,6 +9,10 @@ inputs:
     description: 'JVM to install (leave empty to use default)'
     required: false
     default: ''
+  jvm-index:
+    description: 'Arbitrary URL containing the JVM index source (leave empty to use default)'
+    required: false
+    default: ''
   apps:
     description: 'Applications to install'
     required: false
