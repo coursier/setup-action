@@ -18,6 +18,11 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
 - `jvm` (optional): JVM to install
   - one of the options from `cs java --available`.
   - if left empty either the existing JVM will be used or Coursier will install its default JVM.
+
+- `jvm-index` (optional): The JVM index source
+  - arbitrary URL containing the JVM index source like in `cs java --available --jvm-index https://url/of/your/index.json`.
+  - if left empty the coursier index will be used as default JVM index source
+
 - `apps` (optional): Scala apps to install (`sbtn` by default)
   - space separated list of app names (from the [main channel](https://github.com/coursier/apps))
 
@@ -29,6 +34,7 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
     - uses: coursier/setup-action@v1
       with:
         jvm: adopt:11
+        jvm-index: https://url/of/your/index.json
         apps: sbtn bloop ammonite
 ```
 
