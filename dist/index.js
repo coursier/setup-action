@@ -148,15 +148,13 @@ function run() {
             }));
             yield core.group('Install JVM', () => __awaiter(this, void 0, void 0, function* () {
                 const jvmInput = core.getInput('jvm');
-                const jvmIndexInput = core.getInput('jvm-index');
                 const jvmArg = jvmInput ? ['--jvm', jvmInput] : [];
-                const jvmIndexArg = jvmIndexInput ? ['--jvm-index', jvmIndexInput] : [];
                 if (!jvmInput && process.env.JAVA_HOME) {
                     core.info(`skipping, JVM is already installed in ${process.env.JAVA_HOME}`);
                 }
                 else {
-                    yield cs('java', ...jvmArg, ...jvmIndexArg, '-version');
-                    const csJavaHome = yield cs('java-home', ...jvmArg, ...jvmIndexArg);
+                    yield cs('java', ...jvmArg, '-version');
+                    const csJavaHome = yield cs('java-home', ...jvmArg);
                     core.exportVariable('JAVA_HOME', csJavaHome);
                     core.addPath(path.join(csJavaHome, 'bin'));
                 }
