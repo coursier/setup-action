@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/laughedelic/coursier-setup.git"
+    "url": "git+https://github.com/coursier/setup-action.git"
   },
   "keywords": [
     "actions",
