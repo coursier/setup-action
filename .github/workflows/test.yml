@@ -22,7 +22,7 @@ jobs:
         npm install
         npm run all
 
-    # create an sbt file to enabling sbt caching
+    # create an sbt file to enable sbt caching
     - run: echo 'name := "foo"' > build.sbt
     - id: cs-setup
       uses: ./
