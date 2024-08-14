@@ -95,6 +95,23 @@ async function cs(...args: string[]): Promise<string> {
     const csCached = await tc.cacheFile(csBinary, binaryName, 'cs', csVersion)
     core.addPath(csCached)
   }
+  
+  const disableDefaultReposInput = core.getInput('disableDefaultRepos')
+
+  if (disableDefaultReposInput.toLowerCase() === 'true') {
+    args.push('--no-default')
+  }
+
+  const customRepositoryInput = core.getInput('customRepositories')
+  if (customRepositoryInput) {
+    const repositories = customRepositoryInput.split('|')
+
+    // For each repository, push the `-r` flag and the repository itself to the args list
+    repositories.forEach(repo => {
+      args.push('-r', repo.trim())
+    })
+  }
+
   return execOutput('cs', ...args)
 }
 

@@ -21,6 +21,14 @@ inputs:
     description: 'Coursier version to install'
     required: false
     default: ''
+  customRepositories:
+    description: 'The pipe (|) seperated locations of non-standard repositories. See https://get-coursier.io/docs/other-repositories'
+    required: false
+    default: ''
+  disableDefaultRepos:
+    description: 'Whether to pass the --no-default flag to coursier'
+    required: false
+    default: 'false'
 outputs:
   cs-version:
     description: 'Version of the installed Coursier'
