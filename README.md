@@ -26,6 +26,12 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
 - `apps` (optional): Scala apps to install (`sbtn` by default)
   - space separated list of app names (from the [main channel](https://github.com/coursier/apps))
 
+- `customRepositories` (optional): ''
+  - Pipe separated list of [repositories](https://get-coursier.io/docs/other-repositories) to supply to coursier
+
+- `disableDefaultRepos` (optional): 'false'
+  - Whether or not to pass the --no-default flag to coursier
+
 ### Example with custom inputs
 
 ```yml
@@ -36,6 +42,8 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
         jvm: adopt:11
         jvm-index: https://url/of/your/index.json
         apps: sbtn bloop ammonite
+        disableDefaultRepos: true
+        customRepositories: https://packages.corp.com/maven
 ```
 
 ## Outputs
