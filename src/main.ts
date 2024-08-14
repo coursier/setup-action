@@ -95,7 +95,7 @@ async function cs(...args: string[]): Promise<string> {
     const csCached = await tc.cacheFile(csBinary, binaryName, 'cs', csVersion)
     core.addPath(csCached)
   }
-  
+
   const disableDefaultReposInput = core.getInput('disableDefaultRepos')
 
   if (disableDefaultReposInput.toLowerCase() === 'true') {
