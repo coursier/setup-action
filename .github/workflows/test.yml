@@ -12,6 +12,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-13, windows-latest]
         jvm: ['8', '21']
+        include:
+          - os: "macos-14"
+            jvm: '21'
     steps:
     - uses: actions/checkout@v4
 
