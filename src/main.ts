@@ -8,8 +8,8 @@ import * as tc from '@actions/tool-cache'
 // but coursier is not published on npm
 import { compareVersions } from 'compare-versions'
 
-const defaultVersion_x86_64 = '2.1.14'
-const defaultVersion_aarch64 = '2.1.14'
+const defaultVersion_x86_64 = '2.1.17'
+const defaultVersion_aarch64 = '2.1.17'
 
 const architecture_x86_64 = 'x86_64'
 const architecture_aarch64 = 'aarch64'
