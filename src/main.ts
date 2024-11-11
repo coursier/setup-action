@@ -4,6 +4,10 @@ import * as os from 'os'
 import * as path from 'path'
 import * as tc from '@actions/tool-cache'
 
+// would have preferred to use coursier.core.Version here,
+// but coursier is not published on npm
+import { compareVersions } from 'compare-versions'
+
 const defaultVersion_x86_64 = '2.1.14'
 const defaultVersion_aarch64 = '2.1.14'
 
@@ -16,7 +20,7 @@ const csVersion =
   (architecture === architecture_x86_64 ? defaultVersion_x86_64 : defaultVersion_aarch64)
 const coursierVersionSpec = csVersion
 const coursierBinariesGithubRepository =
-  architecture === architecture_x86_64
+  architecture === architecture_x86_64 || compareVersions(csVersion, '2.1.16') >= 0
     ? 'https://github.com/coursier/coursier/'
     : 'https://github.com/VirtusLab/coursier-m1/'
 
