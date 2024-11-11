@@ -27,7 +27,8 @@
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/exec": "^1.1.1",
-    "@actions/tool-cache": "^2.0.1"
+    "@actions/tool-cache": "^2.0.1",
+    "compare-versions": "^6.1.1"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^2.10.1",
