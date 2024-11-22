@@ -38,26 +38,25 @@ const tc = __importStar(__nccwpck_require__(3472));
 // would have preferred to use coursier.core.Version here,
 // but coursier is not published on npm
 const compare_versions_1 = __nccwpck_require__(2026);
-const defaultVersion_x86_64 = '2.1.17';
-const defaultVersion_aarch64 = '2.1.17';
-const architecture_x86_64 = 'x86_64';
-const architecture_aarch64 = 'aarch64';
-const architecture = getCoursierArchitecture();
+const mainRepoDefaultVersion = '2.1.17';
+const virtusLabM1DefaultVersion = '2.1.17';
+const defaultUseMainRepo = process.arch === 'x64' || process.platform == 'darwin';
 const csVersion = core.getInput('version') ||
-    (architecture === architecture_x86_64 ? defaultVersion_x86_64 : defaultVersion_aarch64);
-const coursierVersionSpec = csVersion;
-const coursierBinariesGithubRepository = architecture === architecture_x86_64 || (0, compare_versions_1.compareVersions)(csVersion, '2.1.16') >= 0
+    (defaultUseMainRepo ? mainRepoDefaultVersion : virtusLabM1DefaultVersion);
+const useMainRepo = process.arch === 'x64' ||
+    (process.platform == 'darwin' && (0, compare_versions_1.compareVersions)(csVersion, '2.1.16') >= 0);
+const coursierBinariesGithubRepository = useMainRepo
     ? 'https://github.com/coursier/coursier/'
     : 'https://github.com/VirtusLab/coursier-m1/';
-function getCoursierArchitecture() {
-    if (process.arch === 'x64') {
-        return architecture_x86_64;
+function getCoursierArchitecture(arch) {
+    if (arch === 'x64') {
+        return 'x86_64';
     }
-    else if (process.arch === 'arm' || process.arch === 'arm64') {
-        return architecture_aarch64;
+    else if (arch === 'arm' || arch === 'arm64') {
+        return 'aarch64';
     }
     else {
-        throw new Error(`Coursier does not have support for the ${process.arch} architecture`);
+        throw new Error(`Coursier does not have support for the ${arch} architecture`);
     }
 }
 async function execOutput(cmd, ...args) {
@@ -73,6 +72,7 @@ async function execOutput(cmd, ...args) {
     return output.trim();
 }
 async function downloadCoursier() {
+    const architecture = getCoursierArchitecture(process.arch);
     const baseUrl = `${coursierBinariesGithubRepository}/releases/download/v${csVersion}/cs-${architecture}`;
     let csBinary = '';
     switch (process.platform) {
@@ -115,7 +115,7 @@ async function downloadCoursier() {
     return csBinary;
 }
 async function cs(...args) {
-    const previous = tc.find('cs', coursierVersionSpec);
+    const previous = tc.find('cs', csVersion);
     if (previous) {
         core.addPath(previous);
     }
