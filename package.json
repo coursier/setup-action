@@ -34,7 +34,7 @@
     "@stylistic/eslint-plugin": "^4.4.1",
     "@types/node": "^22.15.29",
     "@typescript-eslint/eslint-plugin": "^8.33.1",
-    "@typescript-eslint/parser": "^8.33.1",
+    "@typescript-eslint/parser": "^8.34.0",
     "@vercel/ncc": "^0.38.3",
     "eslint": "^9.28.0",
     "eslint-plugin-github": "^5.1.8",
