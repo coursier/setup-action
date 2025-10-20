@@ -31,7 +31,7 @@
     "compare-versions": "^6.1.1"
   },
   "devDependencies": {
-    "@stylistic/eslint-plugin": "^5.4.0",
+    "@stylistic/eslint-plugin": "^5.5.0",
     "@types/node": "^24.8.1",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.0",
