@@ -51,7 +51,9 @@ async function downloadCoursier(): Promise<string> {
   let csBinary = ''
   switch (process.platform) {
     case 'linux': {
-      const guid = await tc.downloadTool(`${baseUrl}-pc-linux.gz`)
+      const useContainerImageInput = core.getInput('useContainerImage')
+      const linuxUrl = useContainerImageInput.toLowerCase() === 'true' ? `${baseUrl}-pc-linux-container.gz` : `${baseUrl}-pc-linux.gz`
+      const guid =  await tc.downloadTool(linuxUrl)
       const archive = `${guid}.gz`
       await cli.exec('mv', [guid, archive])
       csBinary = archive
