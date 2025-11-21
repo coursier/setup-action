@@ -29,6 +29,10 @@ inputs:
     description: 'Whether to pass the --no-default flag to coursier'
     required: false
     default: 'false'
+  useContainerImage:
+    description: 'Use the container-compatible Coursier launcher. When enabled, the action downloads the *-container launcher variant (built with -H:-UseContainerSupport).'
+    required: false
+    default: 'false'
 outputs:
   cs-version:
     description: 'Version of the installed Coursier'
