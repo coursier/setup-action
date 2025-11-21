@@ -87,8 +87,8 @@ async function downloadCoursier() {
     let csBinary = '';
     switch (process.platform) {
         case 'linux': {
-            const useContainerImageInput = core.getInput('useContainerImage');
-            const linuxUrl = useContainerImageInput.toLowerCase() === 'true'
+            const useContainerImageInput = core.getBooleanInput('useContainerImage');
+            const linuxUrl = useContainerImageInput
                 ? `${baseUrl}-pc-linux-container.gz`
                 : `${baseUrl}-pc-linux.gz`;
             const guid = await tc.downloadTool(linuxUrl);
