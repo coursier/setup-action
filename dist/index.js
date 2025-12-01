@@ -48,8 +48,8 @@ const tc = __importStar(__nccwpck_require__(3472));
 // would have preferred to use coursier.core.Version here,
 // but coursier is not published on npm
 const compare_versions_1 = __nccwpck_require__(2026);
-const mainRepoDefaultVersion = '2.1.17';
-const virtusLabM1DefaultVersion = '2.1.17';
+const mainRepoDefaultVersion = '2.1.25-M19';
+const virtusLabM1DefaultVersion = '2.1.25-M19';
 const defaultUseMainRepo = process.arch === 'x64' || process.platform == 'darwin';
 const csVersion = core.getInput('version') ||
     (defaultUseMainRepo ? mainRepoDefaultVersion : virtusLabM1DefaultVersion);
