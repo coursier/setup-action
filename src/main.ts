@@ -8,8 +8,8 @@ import * as tc from '@actions/tool-cache'
 // but coursier is not published on npm
 import { compareVersions } from 'compare-versions'
 
-const mainRepoDefaultVersion = '2.1.17'
-const virtusLabM1DefaultVersion = '2.1.17'
+const mainRepoDefaultVersion = '2.1.25-M19'
+const virtusLabM1DefaultVersion = '2.1.25-M19'
 
 const defaultUseMainRepo = process.arch === 'x64' || process.platform == 'darwin'
 const csVersion =
