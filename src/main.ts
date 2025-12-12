@@ -52,24 +52,29 @@ async function downloadCoursier(): Promise<string> {
   switch (process.platform) {
     case 'linux': {
       const useContainerImageInput = core.getBooleanInput('useContainerImage')
-      const linuxUrl = useContainerImageInput
+      const url = useContainerImageInput
         ? `${baseUrl}-pc-linux-container.gz`
         : `${baseUrl}-pc-linux.gz`
-      const guid = await tc.downloadTool(linuxUrl)
+      console.log(`Downloading ${url}`)
+      const guid = await tc.downloadTool(url)
       const archive = `${guid}.gz`
       await cli.exec('mv', [guid, archive])
       csBinary = archive
       break
     }
     case 'darwin': {
-      const guid = await tc.downloadTool(`${baseUrl}-apple-darwin.gz`)
+      const url = `${baseUrl}-apple-darwin.gz`
+      console.log(`Downloading ${url}`)
+      const guid = await tc.downloadTool(url)
       const archive = `${guid}.gz`
       await cli.exec('mv', [guid, archive])
       csBinary = archive
       break
     }
     case 'win32': {
-      const guid = await tc.downloadTool(`${baseUrl}-pc-win32.zip`)
+      const url = `${baseUrl}-pc-win32.zip`
+      console.log(`Downloading ${url}`)
+      const guid = await tc.downloadTool(url)
       const archive = `${guid}.zip`
       await cli.exec('mv', [guid, archive])
       csBinary = archive
