@@ -8,19 +8,16 @@ import * as tc from '@actions/tool-cache'
 // but coursier is not published on npm
 import { compareVersions } from 'compare-versions'
 
-const mainRepoDefaultVersion = '2.1.25-M19'
-const virtusLabM1DefaultVersion = '2.1.25-M19'
+const defaultVersion = '2.1.25-M19'
 
-const defaultUseMainRepo = process.arch === 'x64' || process.platform == 'darwin'
-const csVersion =
-  core.getInput('version') ||
-  (defaultUseMainRepo ? mainRepoDefaultVersion : virtusLabM1DefaultVersion)
-const useMainRepo =
-  process.arch === 'x64' ||
-  (process.platform == 'darwin' && compareVersions(csVersion, '2.1.16') >= 0)
-const coursierBinariesGithubRepository = useMainRepo
-  ? 'https://github.com/coursier/coursier/'
-  : 'https://github.com/VirtusLab/coursier-m1/'
+const csVersion = core.getInput('version') || defaultVersion
+const useVirtusLabRepo =
+  process.arch === 'arm64' &&
+  ((process.platform == 'darwin' && compareVersions(csVersion.replace('-M', '.'), '2.1.16') < 0) ||
+    (process.platform == 'linux' && compareVersions(csVersion.replace('-M', '.'), '2.1.25.3') < 0))
+const coursierBinariesGithubRepository = useVirtusLabRepo
+  ? 'https://github.com/VirtusLab/coursier-m1/'
+  : 'https://github.com/coursier/coursier/'
 
 function getCoursierArchitecture(arch: string): string {
   if (arch === 'x64') {
