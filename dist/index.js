@@ -48,16 +48,14 @@ const tc = __importStar(__nccwpck_require__(3472));
 // would have preferred to use coursier.core.Version here,
 // but coursier is not published on npm
 const compare_versions_1 = __nccwpck_require__(2026);
-const mainRepoDefaultVersion = '2.1.25-M19';
-const virtusLabM1DefaultVersion = '2.1.25-M19';
-const defaultUseMainRepo = process.arch === 'x64' || process.platform == 'darwin';
-const csVersion = core.getInput('version') ||
-    (defaultUseMainRepo ? mainRepoDefaultVersion : virtusLabM1DefaultVersion);
-const useMainRepo = process.arch === 'x64' ||
-    (process.platform == 'darwin' && (0, compare_versions_1.compareVersions)(csVersion, '2.1.16') >= 0);
-const coursierBinariesGithubRepository = useMainRepo
-    ? 'https://github.com/coursier/coursier/'
-    : 'https://github.com/VirtusLab/coursier-m1/';
+const defaultVersion = '2.1.25-M19';
+const csVersion = core.getInput('version') || defaultVersion;
+const useVirtusLabRepo = process.arch === 'arm64' &&
+    ((process.platform == 'darwin' && (0, compare_versions_1.compareVersions)(csVersion.replace('-M', '.'), '2.1.16') < 0) ||
+        (process.platform == 'linux' && (0, compare_versions_1.compareVersions)(csVersion.replace('-M', '.'), '2.1.25.3') < 0));
+const coursierBinariesGithubRepository = useVirtusLabRepo
+    ? 'https://github.com/VirtusLab/coursier-m1/'
+    : 'https://github.com/coursier/coursier/';
 function getCoursierArchitecture(arch) {
     if (arch === 'x64') {
         return 'x86_64';
