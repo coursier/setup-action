@@ -16,6 +16,8 @@ jobs:
         include:
           - os: "macos-15"
             jvm: '21'
+          - os: "ubuntu-24.04-arm"
+            jvm: '21'
     steps:
     - uses: actions/checkout@v6
 
