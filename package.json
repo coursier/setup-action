@@ -26,8 +26,8 @@
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^2.0.3",
-    "@actions/exec": "^2.0.0",
-    "@actions/tool-cache": "^3.0.0",
+    "@actions/exec": "^3.0.0",
+    "@actions/tool-cache": "^3.0.1",
     "compare-versions": "^6.1.1"
   },
   "devDependencies": {
