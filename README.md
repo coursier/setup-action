@@ -32,6 +32,10 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
 - `disableDefaultRepos` (optional): 'false'
   - Whether or not to pass the --no-default flag to coursier
 
+- `extraJvmArgs` (optional): ''
+  - Space-separated list of `-D` JVM property args passed to every `cs` invocation. The `-J` prefix is added automatically if missing.
+  - e.g. `-Dhttps.proxyHost=proxy.example.com -Dhttps.proxyPort=8080`
+
 ### Example with custom inputs
 
 ```yml

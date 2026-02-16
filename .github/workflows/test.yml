@@ -33,6 +33,26 @@ jobs:
         test "$OSTYPE" != "msys" || npm run format
         npm run all
 
+    # test extraJvmArgs — must run before the main setup so that apps and
+    # JVM are not yet cached, forcing cs to fetch over the network and hit
+    # the bogus proxy
+    - name: Test extraJvmArgs passes args to cs
+      uses: ./
+      with:
+        jvm: ${{ matrix.jvm }}
+        extraJvmArgs: -Dhttps.proxyHost=invalid.proxy.local -Dhttps.proxyPort=9999
+      continue-on-error: true
+      id: extra-jvm-args-test
+    - name: Verify extraJvmArgs caused failure
+      shell: bash
+      run: |
+        if [ "${{ steps.extra-jvm-args-test.outcome }}" = "failure" ]; then
+          echo "extraJvmArgs correctly passed to cs (proxy caused expected failure)"
+        else
+          echo "::error::extraJvmArgs test should have failed with bogus proxy but didn't"
+          exit 1
+        fi
+
     # create an sbt file to enable sbt caching
     - run: echo 'name := "foo"' > build.sbt
     - id: cs-setup

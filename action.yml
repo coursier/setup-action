@@ -29,6 +29,10 @@ inputs:
     description: 'Whether to pass the --no-default flag to coursier'
     required: false
     default: 'false'
+  extraJvmArgs:
+    description: 'Space-separated list of -D JVM property args passed to every cs invocation. The -J prefix is added automatically if missing (e.g. -Dhttps.proxyHost=proxy.example.com -Dhttps.proxyPort=8080)'
+    required: false
+    default: ''
   useContainerImage:
     description: 'Use the container-compatible Coursier launcher. When enabled, the action downloads the *-container launcher variant (built with -H:-UseContainerSupport).'
     required: false
