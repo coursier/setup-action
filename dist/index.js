@@ -142,6 +142,20 @@ async function cs(...args) {
         const csCached = await tc.cacheFile(csBinary, binaryName, 'cs', csVersion);
         core.addPath(csCached);
     }
+    const extraJvmArgsInput = core.getInput('extraJvmArgs');
+    if (extraJvmArgsInput) {
+        const extraArgs = extraJvmArgsInput
+            .trim()
+            .split(/\s+/)
+            .map(raw => {
+            const arg = raw.startsWith('-J') ? raw : `-J${raw}`;
+            if (!/^-J-D[a-zA-Z][\w]*(\.[a-zA-Z][\w]*)*(=.*)?$/.test(arg)) {
+                throw new Error(`Invalid JVM argument: ${raw}. Expected format: -J-D<key>=<value> (e.g. -J-Dhttps.proxyHost=proxy.example.com)`);
+            }
+            return arg;
+        });
+        args = [...extraArgs, ...args];
+    }
     const disableDefaultReposInput = core.getInput('disableDefaultRepos');
     if (disableDefaultReposInput.toLowerCase() === 'true') {
         args.push('--no-default');
