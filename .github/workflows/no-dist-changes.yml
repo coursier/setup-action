@@ -11,47 +11,12 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Detect dist changes
-        id: dist
+      - name: Fail on dist changes
         shell: bash
         run: |
           changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- dist/)
           if [ -n "$changed" ]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            {
-              echo "files<<EOF"
-              echo "$changed"
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Changes under dist/ are not allowed in PRs. Files under dist/ are updated by CI and don't need to be committed."
+            echo "$changed"
+            exit 1
           fi
-
-      - name: Comment on dist changes
-        if: steps.dist.outputs.changed == 'true'
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const files = `${{ steps.dist.outputs.files }}`;
-            const body = [
-              "Changes under `dist/` should not be committed.",
-              "The `coursier/setup-action` CI workflow takes care of updating those files.",
-              "",
-              "Changed files:",
-              "```",
-              files || "(none)",
-              "```"
-            ].join("\n");
-            await github.rest.issues.createComment({
-              ...context.repo,
-              issue_number: context.issue.number,
-              body,
-            });
-
-      - name: Fail on dist changes
-        if: steps.dist.outputs.changed == 'true'
-        shell: bash
-        run: |
-          echo "::error::Changes under dist/ are not allowed in PRs. Files under dist/ are updated by CI and don't need to be committed."
-          echo "${{ steps.dist.outputs.files }}"
-          exit 1
