@@ -4,20 +4,10 @@ import * as os from 'os'
 import * as path from 'path'
 import * as tc from '@actions/tool-cache'
 
-// would have preferred to use coursier.core.Version here,
-// but coursier is not published on npm
-import { compareVersions } from 'compare-versions'
-
 const defaultVersion = '2.1.25-M19'
 
 const csVersion = core.getInput('version') || defaultVersion
-const useVirtusLabRepo =
-  process.arch === 'arm64' &&
-  ((process.platform == 'darwin' && compareVersions(csVersion.replace('-M', '.'), '2.1.16') < 0) ||
-    (process.platform == 'linux' && compareVersions(csVersion.replace('-M', '.'), '2.1.25.3') < 0))
-const coursierBinariesGithubRepository = useVirtusLabRepo
-  ? 'https://github.com/VirtusLab/coursier-m1/'
-  : 'https://github.com/coursier/coursier/'
+const coursierBinariesGithubRepository = 'https://github.com/coursier/coursier/'
 
 function getCoursierArchitecture(arch: string): string {
   if (arch === 'x64') {
