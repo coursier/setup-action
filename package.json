@@ -37,7 +37,7 @@
     "@typescript-eslint/parser": "^8.54.0",
     "esbuild": "^0.27.3",
     "eslint": "^9.39.2",
-    "eslint-plugin-github": "^5.1.8",
+    "eslint-plugin-github": "^6.0.0",
     "js-yaml": "^4.1.1",
     "prettier": "3.8.1",
     "typescript": "^5.9.3"
