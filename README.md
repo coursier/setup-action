@@ -40,8 +40,8 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
 
 ```yml
   steps:
-    - uses: actions/checkout@v2
-    - uses: coursier/setup-action@v1
+    - uses: actions/checkout@v4
+    - uses: coursier/setup-action@v3
       with:
         jvm: adopt:11
         jvm-index: https://url/of/your/index.json
@@ -60,7 +60,7 @@ This action should work well with the official Coursier [cache-action](https://g
 
 ```yml
   steps:
-    - uses: actions/checkout@v2
-    - uses: coursier/cache-action@v6
-    - uses: coursier/setup-action@v1
+    - uses: actions/checkout@v4
+    - uses: coursier/cache-action@v8
+    - uses: coursier/setup-action@v3
 ```
