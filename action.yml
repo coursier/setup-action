@@ -41,5 +41,5 @@ outputs:
   cs-version:
     description: 'Version of the installed Coursier'
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'
