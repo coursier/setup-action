@@ -40,6 +40,6 @@
     "eslint-plugin-github": "^6.0.0",
     "js-yaml": "^4.1.1",
     "prettier": "3.8.1",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.2"
   }
 }
