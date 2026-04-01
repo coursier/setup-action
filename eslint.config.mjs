@@ -1,10 +1,10 @@
 import stylistic from "@stylistic/eslint-plugin";
 import globals from "globals";
-import github from "eslint-plugin-github";
+import tseslint from "typescript-eslint";
 
-export default [{
+export default tseslint.config({
     ignores: ["**/dist/", "**/lib/", "**/node_modules/"],
-}, ...github.getFlatConfigs().typescript, {
+}, ...tseslint.configs.recommended, {
     plugins: {
         "@stylistic": stylistic,
     },
@@ -67,4 +67,4 @@ export default [{
         "@typescript-eslint/unbound-method": "error",
         "i18n-text/no-en": "off",
     },
-}];
+});
