@@ -37,7 +37,7 @@
     "@typescript-eslint/parser": "^8.58.1",
     "esbuild": "^0.28.0",
     "eslint": "^10.2.0",
-    "globals": "^17.4.0",
+    "globals": "^17.5.0",
     "js-yaml": "^4.1.1",
     "prettier": "3.8.2",
     "typescript": "^6.0.2",
