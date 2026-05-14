@@ -22675,6 +22675,7 @@ function group(name, fn) {
 }
 
 // src/main.ts
+var fs4 = __toESM(require("fs"));
 var os7 = __toESM(require("os"));
 var path6 = __toESM(require("path"));
 
@@ -22865,6 +22866,24 @@ function downloadToolAttempt(url, dest, auth, headers) {
     }
   });
 }
+function cacheDir(sourceDir, tool, version, arch3) {
+  return __awaiter9(this, void 0, void 0, function* () {
+    version = semver2.clean(version) || version;
+    arch3 = arch3 || os6.arch();
+    debug(`Caching tool ${tool} ${version} ${arch3}`);
+    debug(`source dir: ${sourceDir}`);
+    if (!fs3.statSync(sourceDir).isDirectory()) {
+      throw new Error("sourceDir is not a directory");
+    }
+    const destPath = yield _createToolPath(tool, version, arch3);
+    for (const itemName of fs3.readdirSync(sourceDir)) {
+      const s = path5.join(sourceDir, itemName);
+      yield cp(s, destPath, { recursive: true });
+    }
+    _completeToolPath(tool, version, arch3);
+    return destPath;
+  });
+}
 function cacheFile(sourceFile, targetFile, tool, version, arch3) {
   return __awaiter9(this, void 0, void 0, function* () {
     version = semver2.clean(version) || version;
@@ -23016,6 +23035,42 @@ async function execOutput(cmd, ...args) {
   await exec(cmd, args.filter(Boolean), options);
   return output.trim();
 }
+async function downloadJvmCoursier(launcherType) {
+  const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}`;
+  if (launcherType === "assembly") {
+    const url = `${baseUrl}/coursier.jar`;
+    console.log(`Downloading ${url}`);
+    const jarDownloaded = await downloadTool(url);
+    const tempDir = fs4.mkdtempSync(path6.join(os7.tmpdir(), "cs-assembly-"));
+    fs4.copyFileSync(jarDownloaded, path6.join(tempDir, "coursier.jar"));
+    if (process.platform === "win32") {
+      fs4.writeFileSync(
+        path6.join(tempDir, "cs.bat"),
+        '@echo off\njava -jar "%~dp0coursier.jar" %*\n'
+      );
+    } else {
+      const wrapperPath = path6.join(tempDir, "cs");
+      fs4.writeFileSync(
+        wrapperPath,
+        '#!/bin/sh\nexec java -jar "$(dirname "$0")/coursier.jar" "$@"\n'
+      );
+      fs4.chmodSync(wrapperPath, 493);
+    }
+    return tempDir;
+  } else {
+    if (process.platform === "win32") {
+      const url = `${baseUrl}/coursier.bat`;
+      console.log(`Downloading ${url}`);
+      return downloadTool(url);
+    } else {
+      const url = `${baseUrl}/coursier`;
+      console.log(`Downloading ${url}`);
+      const filePath = await downloadTool(url);
+      await exec("chmod", ["+x", filePath]);
+      return filePath;
+    }
+  }
+}
 async function downloadCoursier() {
   const architecture = getCoursierArchitecture(process.arch);
   const baseUrl = `${coursierBinariesGithubRepository}/releases/download/v${csVersion}/cs-${architecture}`;
@@ -23066,14 +23121,32 @@ async function downloadCoursier() {
   return csBinary;
 }
 async function cs(...args) {
-  const previous = find("cs", csVersion);
+  const launcherInput = getInput("launcher").toLowerCase();
+  const launcherType = launcherInput === "thin" || launcherInput === "jvm" ? "thin" : launcherInput === "assembly" ? "assembly" : "native";
+  const toolName = launcherType === "native" ? "cs" : `cs-${launcherType}`;
+  const previous = find(toolName, csVersion);
   if (previous) {
     addPath(previous);
   } else {
-    const csBinary = await downloadCoursier();
-    const binaryName = process.platform === "win32" ? "cs.exe" : "cs";
-    const csCached = await cacheFile(csBinary, binaryName, "cs", csVersion);
-    addPath(csCached);
+    if (launcherType === "thin") {
+      const binaryPath = await downloadJvmCoursier(launcherType);
+      const binaryName = process.platform === "win32" ? "cs.bat" : "cs";
+      const csCached = await cacheFile(binaryPath, binaryName, toolName, csVersion);
+      addPath(csCached);
+    } else if (launcherType === "assembly") {
+      const binaryPath = await downloadJvmCoursier(launcherType);
+      try {
+        const csCached = await cacheDir(binaryPath, toolName, csVersion);
+        addPath(csCached);
+      } finally {
+        fs4.rmSync(binaryPath, { recursive: true, force: true });
+      }
+    } else {
+      const csBinary = await downloadCoursier();
+      const binaryName = process.platform === "win32" ? "cs.exe" : "cs";
+      const csCached = await cacheFile(csBinary, binaryName, "cs", csVersion);
+      addPath(csCached);
+    }
   }
   const extraJvmArgsInput = getInput("extraJvmArgs");
   if (extraJvmArgsInput) {

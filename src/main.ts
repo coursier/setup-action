@@ -1,5 +1,6 @@
 import * as cli from '@actions/exec'
 import * as core from '@actions/core'
+import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import * as tc from '@actions/tool-cache'
@@ -40,6 +41,48 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
   }
   await cli.exec(cmd, args.filter(Boolean), options)
   return output.trim()
+}
+
+async function downloadJvmCoursier(launcherType: 'thin' | 'assembly'): Promise<string> {
+  const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}`
+
+  if (launcherType === 'assembly') {
+    const url = `${baseUrl}/coursier.jar`
+    console.log(`Downloading ${url}`)
+    const jarDownloaded = await tc.downloadTool(url)
+
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-assembly-'))
+    fs.copyFileSync(jarDownloaded, path.join(tempDir, 'coursier.jar'))
+
+    if (process.platform === 'win32') {
+      fs.writeFileSync(
+        path.join(tempDir, 'cs.bat'),
+        '@echo off\njava -jar "%~dp0coursier.jar" %*\n',
+      )
+    } else {
+      const wrapperPath = path.join(tempDir, 'cs')
+      fs.writeFileSync(
+        wrapperPath,
+        '#!/bin/sh\nexec java -jar "$(dirname "$0")/coursier.jar" "$@"\n',
+      )
+      fs.chmodSync(wrapperPath, 0o755)
+    }
+
+    return tempDir
+  } else {
+    // thin / jvm launcher
+    if (process.platform === 'win32') {
+      const url = `${baseUrl}/coursier.bat`
+      console.log(`Downloading ${url}`)
+      return tc.downloadTool(url)
+    } else {
+      const url = `${baseUrl}/coursier`
+      console.log(`Downloading ${url}`)
+      const filePath = await tc.downloadTool(url)
+      await cli.exec('chmod', ['+x', filePath])
+      return filePath
+    }
+  }
 }
 
 async function downloadCoursier(): Promise<string> {
@@ -95,14 +138,38 @@ async function downloadCoursier(): Promise<string> {
 }
 
 async function cs(...args: string[]): Promise<string> {
-  const previous = tc.find('cs', csVersion)
+  const launcherInput = core.getInput('launcher').toLowerCase()
+  const launcherType: 'native' | 'thin' | 'assembly' =
+    launcherInput === 'thin' || launcherInput === 'jvm'
+      ? 'thin'
+      : launcherInput === 'assembly'
+        ? 'assembly'
+        : 'native'
+  const toolName = launcherType === 'native' ? 'cs' : `cs-${launcherType}`
+
+  const previous = tc.find(toolName, csVersion)
   if (previous) {
     core.addPath(previous)
   } else {
-    const csBinary = await downloadCoursier()
-    const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs'
-    const csCached = await tc.cacheFile(csBinary, binaryName, 'cs', csVersion)
-    core.addPath(csCached)
+    if (launcherType === 'thin') {
+      const binaryPath = await downloadJvmCoursier(launcherType)
+      const binaryName = process.platform === 'win32' ? 'cs.bat' : 'cs'
+      const csCached = await tc.cacheFile(binaryPath, binaryName, toolName, csVersion)
+      core.addPath(csCached)
+    } else if (launcherType === 'assembly') {
+      const binaryPath = await downloadJvmCoursier(launcherType)
+      try {
+        const csCached = await tc.cacheDir(binaryPath, toolName, csVersion)
+        core.addPath(csCached)
+      } finally {
+        fs.rmSync(binaryPath, { recursive: true, force: true })
+      }
+    } else {
+      const csBinary = await downloadCoursier()
+      const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs'
+      const csCached = await tc.cacheFile(csBinary, binaryName, 'cs', csVersion)
+      core.addPath(csCached)
+    }
   }
 
   const extraJvmArgsInput = core.getInput('extraJvmArgs')

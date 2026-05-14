@@ -37,6 +37,10 @@ inputs:
     description: 'Use the container-compatible Coursier launcher. When enabled, the action downloads the *-container launcher variant (built with -H:-UseContainerSupport).'
     required: false
     default: 'false'
+  launcher:
+    description: 'Coursier launcher type to use. Leave empty (default) for the native binary launcher. Set to "thin" or "jvm" to use the thin JVM launcher (requires Java in PATH). Set to "assembly" to use the assembly (fat jar) launcher (requires Java in PATH).'
+    required: false
+    default: ''
 outputs:
   cs-version:
     description: 'Version of the installed Coursier'

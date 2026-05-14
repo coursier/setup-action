@@ -36,6 +36,11 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
   - Space-separated list of `-D` JVM property args passed to every `cs` invocation. The `-J` prefix is added automatically if missing.
   - e.g. `-Dhttps.proxyHost=proxy.example.com -Dhttps.proxyPort=8080`
 
+- `launcher` (optional): Coursier launcher type
+  - Leave empty (default) to use the native binary launcher (no Java required).
+  - Set to `thin` or `jvm` to use the [thin JVM launcher](https://get-coursier.io/docs/cli-installation) (`coursier` / `coursier.bat`). **Requires Java to be installed beforehand** (e.g. via `actions/setup-java`).
+  - Set to `assembly` to use the assembly (fat jar) launcher (`coursier.jar`). **Requires Java to be installed beforehand** (e.g. via `actions/setup-java`).
+
 ### Example with custom inputs
 
 ```yml
