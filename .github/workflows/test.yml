@@ -78,3 +78,50 @@ jobs:
       if: runner.os != 'Windows'
     - run: amm --help
     - run: bloop about
+
+  test-jvm-launchers:
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15-intel, windows-latest]
+        launcher: ['thin', 'assembly']
+        include:
+          - os: "macos-15"
+            launcher: 'thin'
+          - os: "macos-15"
+            launcher: 'assembly'
+          - os: "ubuntu-24.04-arm"
+            launcher: 'thin'
+          - os: "ubuntu-24.04-arm"
+            launcher: 'assembly'
+    steps:
+    - uses: actions/checkout@v6
+
+    - uses: actions/setup-node@v6
+      with:
+        node-version: 24
+        cache: 'npm'
+
+    - name: Build
+      shell: bash
+      run: |
+        npm ci
+        npm run package
+
+    - uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+
+    - id: cs-setup-jvm-launcher
+      uses: ./
+      with:
+        launcher: ${{ matrix.launcher }}
+        apps: ''
+
+    - run: echo cs-version=${{ steps.cs-setup-jvm-launcher.outputs.cs-version }}
+    - run: cs --help
+    - run: java -version
