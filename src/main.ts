@@ -43,7 +43,9 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
   return output.trim()
 }
 
-async function downloadJvmCoursier(launcherType: 'thin' | 'assembly'): Promise<string> {
+async function downloadJvmCoursier(
+  launcherType: 'thin' | 'assembly',
+): Promise<{ path: string; isDir: boolean }> {
   const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}`
 
   if (launcherType === 'assembly') {
@@ -68,19 +70,26 @@ async function downloadJvmCoursier(launcherType: 'thin' | 'assembly'): Promise<s
       fs.chmodSync(wrapperPath, 0o755)
     }
 
-    return tempDir
+    return { path: tempDir, isDir: true }
   } else {
     // thin / jvm launcher
     if (process.platform === 'win32') {
-      const url = `${baseUrl}/coursier.bat`
+      // On Windows, `coursier` is a JAR-based thin launcher; wrap it with a .bat
+      const url = `${baseUrl}/coursier`
       console.log(`Downloading ${url}`)
-      return tc.downloadTool(url)
+      const jarDownloaded = await tc.downloadTool(url)
+
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-thin-'))
+      fs.copyFileSync(jarDownloaded, path.join(tempDir, 'coursier'))
+      fs.writeFileSync(path.join(tempDir, 'cs.bat'), '@echo off\njava -jar "%~dp0coursier" %*\n')
+
+      return { path: tempDir, isDir: true }
     } else {
       const url = `${baseUrl}/coursier`
       console.log(`Downloading ${url}`)
       const filePath = await tc.downloadTool(url)
       await cli.exec('chmod', ['+x', filePath])
-      return filePath
+      return { path: filePath, isDir: false }
     }
   }
 }
@@ -152,12 +161,20 @@ async function cs(...args: string[]): Promise<string> {
     core.addPath(previous)
   } else {
     if (launcherType === 'thin') {
-      const binaryPath = await downloadJvmCoursier(launcherType)
-      const binaryName = process.platform === 'win32' ? 'cs.bat' : 'cs'
-      const csCached = await tc.cacheFile(binaryPath, binaryName, toolName, csVersion)
-      core.addPath(csCached)
+      const { path: binaryPath, isDir } = await downloadJvmCoursier(launcherType)
+      if (isDir) {
+        try {
+          const csCached = await tc.cacheDir(binaryPath, toolName, csVersion)
+          core.addPath(csCached)
+        } finally {
+          fs.rmSync(binaryPath, { recursive: true, force: true })
+        }
+      } else {
+        const csCached = await tc.cacheFile(binaryPath, 'cs', toolName, csVersion)
+        core.addPath(csCached)
+      }
     } else if (launcherType === 'assembly') {
-      const binaryPath = await downloadJvmCoursier(launcherType)
+      const { path: binaryPath } = await downloadJvmCoursier(launcherType)
       try {
         const csCached = await tc.cacheDir(binaryPath, toolName, csVersion)
         core.addPath(csCached)

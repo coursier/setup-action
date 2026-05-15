@@ -23056,18 +23056,22 @@ async function downloadJvmCoursier(launcherType) {
       );
       fs4.chmodSync(wrapperPath, 493);
     }
-    return tempDir;
+    return { path: tempDir, isDir: true };
   } else {
     if (process.platform === "win32") {
-      const url = `${baseUrl}/coursier.bat`;
+      const url = `${baseUrl}/coursier`;
       console.log(`Downloading ${url}`);
-      return downloadTool(url);
+      const jarDownloaded = await downloadTool(url);
+      const tempDir = fs4.mkdtempSync(path6.join(os7.tmpdir(), "cs-thin-"));
+      fs4.copyFileSync(jarDownloaded, path6.join(tempDir, "coursier"));
+      fs4.writeFileSync(path6.join(tempDir, "cs.bat"), '@echo off\njava -jar "%~dp0coursier" %*\n');
+      return { path: tempDir, isDir: true };
     } else {
       const url = `${baseUrl}/coursier`;
       console.log(`Downloading ${url}`);
       const filePath = await downloadTool(url);
       await exec("chmod", ["+x", filePath]);
-      return filePath;
+      return { path: filePath, isDir: false };
     }
   }
 }
@@ -23129,12 +23133,20 @@ async function cs(...args) {
     addPath(previous);
   } else {
     if (launcherType === "thin") {
-      const binaryPath = await downloadJvmCoursier(launcherType);
-      const binaryName = process.platform === "win32" ? "cs.bat" : "cs";
-      const csCached = await cacheFile(binaryPath, binaryName, toolName, csVersion);
-      addPath(csCached);
+      const { path: binaryPath, isDir } = await downloadJvmCoursier(launcherType);
+      if (isDir) {
+        try {
+          const csCached = await cacheDir(binaryPath, toolName, csVersion);
+          addPath(csCached);
+        } finally {
+          fs4.rmSync(binaryPath, { recursive: true, force: true });
+        }
+      } else {
+        const csCached = await cacheFile(binaryPath, "cs", toolName, csVersion);
+        addPath(csCached);
+      }
     } else if (launcherType === "assembly") {
-      const binaryPath = await downloadJvmCoursier(launcherType);
+      const { path: binaryPath } = await downloadJvmCoursier(launcherType);
       try {
         const csCached = await cacheDir(binaryPath, toolName, csVersion);
         addPath(csCached);
