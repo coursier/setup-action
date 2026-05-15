@@ -1,2 +1,2 @@
 dist/** -diff linguist-generated=true
-*.ts text eol=lf 
+*.ts text eol=lf
