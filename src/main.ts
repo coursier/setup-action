@@ -148,12 +148,15 @@ async function downloadCoursier(): Promise<string> {
 
 async function cs(...args: string[]): Promise<string> {
   const launcherInput = core.getInput('launcher').toLowerCase()
+  const isWindowsArm = process.platform === 'win32' && process.arch === 'arm64'
   const launcherType: 'native' | 'thin' | 'assembly' =
     launcherInput === 'thin' || launcherInput === 'jvm'
       ? 'thin'
       : launcherInput === 'assembly'
         ? 'assembly'
-        : 'native'
+        : launcherInput === 'native' || !isWindowsArm
+          ? 'native'
+          : 'thin'
   const toolName = launcherType === 'native' ? 'cs' : `cs-${launcherType}`
 
   const previous = tc.find(toolName, csVersion)
