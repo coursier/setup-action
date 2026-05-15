@@ -148,15 +148,18 @@ async function downloadCoursier(): Promise<string> {
 
 async function cs(...args: string[]): Promise<string> {
   const launcherInput = core.getInput('launcher').toLowerCase()
+  // No native coursier binary is available for Windows ARM; fall back to thin launcher by default.
   const isWindowsArm = process.platform === 'win32' && process.arch === 'arm64'
-  const launcherType: 'native' | 'thin' | 'assembly' =
-    launcherInput === 'thin' || launcherInput === 'jvm'
-      ? 'thin'
-      : launcherInput === 'assembly'
-        ? 'assembly'
-        : launcherInput === 'native' || !isWindowsArm
-          ? 'native'
-          : 'thin'
+  let launcherType: 'native' | 'thin' | 'assembly'
+  if (launcherInput === 'thin' || launcherInput === 'jvm') {
+    launcherType = 'thin'
+  } else if (launcherInput === 'assembly') {
+    launcherType = 'assembly'
+  } else if (launcherInput === '' && isWindowsArm) {
+    launcherType = 'thin'
+  } else {
+    launcherType = 'native'
+  }
   const toolName = launcherType === 'native' ? 'cs' : `cs-${launcherType}`
 
   const previous = tc.find(toolName, csVersion)
