@@ -23126,17 +23126,7 @@ async function downloadCoursier() {
 }
 async function cs(...args) {
   const launcherInput = getInput("launcher").toLowerCase();
-  const isWindowsArm = process.platform === "win32" && process.arch === "arm64";
-  let launcherType;
-  if (launcherInput === "thin" || launcherInput === "jvm") {
-    launcherType = "thin";
-  } else if (launcherInput === "assembly") {
-    launcherType = "assembly";
-  } else if (launcherInput === "" && isWindowsArm) {
-    launcherType = "thin";
-  } else {
-    launcherType = "native";
-  }
+  const launcherType = launcherInput === "thin" || launcherInput === "jvm" ? "thin" : launcherInput === "assembly" ? "assembly" : "native";
   const toolName = launcherType === "native" ? "cs" : `cs-${launcherType}`;
   const previous = find(toolName, csVersion);
   if (previous) {
