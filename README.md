@@ -32,6 +32,12 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
 - `disableDefaultRepos` (optional): 'false'
   - Whether or not to pass the --no-default flag to coursier
 
+- `mirrors` (optional): ''
+  - Newline-separated list of `from=to` entries written to `~/.config/coursier/mirror.properties` before any `cs` invocation.
+  - The `from` side may be a comma-separated list of source URLs.
+  - Useful when installing apps from the `--contrib` channel against an internal repository: app descriptors in that channel hardcode `central` as a repository, so `customRepositories` / `disableDefaultRepos` alone cannot redirect their artifact resolution. A mirror rewrites those references at the resolver level.
+  - See [coursier mirrors](https://get-coursier.io/docs/other-repositories#mirrors).
+
 - `extraJvmArgs` (optional): ''
   - Space-separated list of `-D` JVM property args passed to every `cs` invocation. The `-J` prefix is added automatically if missing.
   - e.g. `-Dhttps.proxyHost=proxy.example.com -Dhttps.proxyPort=8080`
@@ -53,6 +59,8 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
         apps: sbtn bloop ammonite
         disableDefaultRepos: true
         customRepositories: https://packages.corp.com/maven
+        mirrors: |
+          https://repo1.maven.org/maven2=https://packages.corp.com/maven
 ```
 
 ## Outputs
