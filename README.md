@@ -35,7 +35,7 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
 - `mirrors` (optional): ''
   - Newline-separated list of `from=to` entries written to `~/.config/coursier/mirror.properties` before any `cs` invocation.
   - The `from` side may be a comma-separated list of source URLs.
-  - Useful when installing apps from the `--contrib` channel against an internal repository: app descriptors in that channel hardcode `central` as a repository, so `customRepositories` / `disableDefaultRepos` alone cannot redirect their artifact resolution. A mirror rewrites those references at the resolver level.
+  - Unlike `customRepositories` / `disableDefaultRepos`, mirrors are applied at the resolver level to every repository coursier sees — including ones declared inside app descriptors that `customRepositories` cannot override.
   - See [coursier mirrors](https://get-coursier.io/docs/other-repositories#mirrors).
 
 - `extraJvmArgs` (optional): ''

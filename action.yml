@@ -30,7 +30,7 @@ inputs:
     required: false
     default: 'false'
   mirrors:
-    description: 'Newline-separated list of "from=to" mirror entries written to ~/.config/coursier/mirror.properties before any cs invocation. The "from" side may be a comma-separated list of source URLs. Mirrors are applied to every repository coursier resolves, including those declared inside app descriptors from the --contrib channel — so this is the way to redirect Maven Central to an internal mirror for `cs install --contrib ...`. See https://get-coursier.io/docs/other-repositories#mirrors'
+    description: 'Newline-separated list of "from=to" mirror entries written to ~/.config/coursier/mirror.properties before any cs invocation. The "from" side may be a comma-separated list of source URLs. Unlike customRepositories / disableDefaultRepos, mirrors are applied at the resolver level to every repository coursier sees — including ones declared inside app descriptors that customRepositories cannot override. See https://get-coursier.io/docs/other-repositories#mirrors'
     required: false
     default: ''
   extraJvmArgs:
