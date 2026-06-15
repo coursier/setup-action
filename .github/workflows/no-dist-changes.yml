@@ -11,12 +11,14 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Fail on dist changes
+      - name: Fail on dist changes mixed with non-dist changes
         shell: bash
         run: |
-          changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- dist/)
-          if [ -n "$changed" ]; then
-            echo "::error::Changes under dist/ are not allowed in PRs. Files under dist/ are updated by CI and don't need to be committed."
-            echo "$changed"
+          dist_changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- dist/)
+          non_dist_changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- ':(exclude)dist/')
+          if [ -n "$dist_changed" ] && [ -n "$non_dist_changed" ]; then
+            echo "::error::This PR mixes changes under dist/ with changes outside of it. Files under dist/ are updated by CI and should not be committed alongside other changes."
+            echo "dist/ changes:"
+            echo "$dist_changed"
             exit 1
           fi
