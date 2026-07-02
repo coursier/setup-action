@@ -18,6 +18,8 @@ jobs:
             jvm: '21'
           - os: "ubuntu-24.04-arm"
             jvm: '21'
+          - os: "windows-11-arm"
+            jvm: '21'
     steps:
     - uses: actions/checkout@v7
 
@@ -96,6 +98,10 @@ jobs:
           - os: "ubuntu-24.04-arm"
             launcher: 'thin'
           - os: "ubuntu-24.04-arm"
+            launcher: 'assembly'
+          - os: "windows-11-arm"
+            launcher: 'thin'
+          - os: "windows-11-arm"
             launcher: 'assembly'
     steps:
     - uses: actions/checkout@v7
