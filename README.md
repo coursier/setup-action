@@ -36,7 +36,7 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
   - Newline-separated list of `from=to` entries written to `~/.config/coursier/mirror.properties` before any `cs` invocation.
   - The `from` side may be a comma-separated list of source URLs.
   - Unlike `customRepositories` / `disableDefaultRepos`, mirrors are applied at the resolver level to every repository coursier sees — including ones declared inside app descriptors that `customRepositories` cannot override.
-  - See [coursier mirrors](https://get-coursier.io/docs/other-repositories#mirrors).
+  - See [coursier mirrors](https://get-coursier.io/docs/other-mirrors).
 
 - `extraJvmArgs` (optional): ''
   - Space-separated list of `-D` JVM property args passed to every `cs` invocation. The `-J` prefix is added automatically if missing.
