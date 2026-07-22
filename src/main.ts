@@ -225,8 +225,44 @@ async function cs(...args: string[]): Promise<string> {
   return execOutput('cs', ...args)
 }
 
+function writeMirrorsFile(): void {
+  const mirrorsInput = core.getInput('mirrors')
+  if (!mirrorsInput.trim()) return
+
+  const entries = mirrorsInput
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line && !line.startsWith('#'))
+
+  const lines: string[] = []
+  entries.forEach((entry, idx) => {
+    const eq = entry.indexOf('=')
+    if (eq < 0) {
+      throw new Error(`Invalid mirror entry (expected from=to): ${entry}`)
+    }
+    const from = entry.slice(0, eq).trim()
+    const to = entry.slice(eq + 1).trim()
+    if (!from || !to) {
+      throw new Error(`Invalid mirror entry (empty side): ${entry}`)
+    }
+    const prefix = `mirror${idx}`
+    lines.push(`${prefix}.from=${from}`)
+    lines.push(`${prefix}.to=${to}`)
+  })
+
+  const configDir = path.join(os.homedir(), '.config', 'coursier')
+  fs.mkdirSync(configDir, { recursive: true })
+  const mirrorFile = path.join(configDir, 'mirror.properties')
+  fs.writeFileSync(mirrorFile, lines.join('\n') + '\n')
+  console.log(
+    `Wrote ${entries.length} mirror entr${entries.length === 1 ? 'y' : 'ies'} to ${mirrorFile}`,
+  )
+}
+
 async function run(): Promise<void> {
   try {
+    writeMirrorsFile()
+
     await core.group('Install Coursier', async () => {
       await cs('--help')
       core.setOutput('cs-version', csVersion)
