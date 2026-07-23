@@ -19,6 +19,8 @@ const useVirtusLabRepo =
 const coursierBinariesGithubRepository = useVirtusLabRepo
   ? 'https://github.com/VirtusLab/coursier-m1/'
   : 'https://github.com/coursier/coursier/'
+let resolvedLauncher: string | undefined
+let warnedAboutUseContainerImage = false
 
 function getCoursierArchitecture(arch: string): string {
   if (arch === 'x64') {
@@ -43,6 +45,14 @@ async function execOutput(cmd: string, ...args: string[]): Promise<string> {
   return output.trim()
 }
 
+function launcherInput(name: 'launcher' | 'preferredLauncher'): string {
+  const value = core.getInput(name).trim()
+  if (value && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value)) {
+    throw new Error(`Invalid ${name} value: ${value}`)
+  }
+  return value
+}
+
 async function downloadJvmCoursier(
   launcherType: 'thin' | 'assembly',
 ): Promise<{ path: string; isDir: boolean }> {
@@ -52,7 +62,6 @@ async function downloadJvmCoursier(
     const url = `${baseUrl}/coursier.jar`
     console.log(`Downloading ${url}`)
     const jarDownloaded = await tc.downloadTool(url)
-
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-assembly-'))
     fs.copyFileSync(jarDownloaded, path.join(tempDir, 'coursier.jar'))
 
@@ -69,41 +78,54 @@ async function downloadJvmCoursier(
       )
       fs.chmodSync(wrapperPath, 0o755)
     }
-
     return { path: tempDir, isDir: true }
-  } else {
-    // thin / jvm launcher
-    if (process.platform === 'win32') {
-      // On Windows, `coursier` is a JAR-based thin launcher; wrap it with a .bat
-      const url = `${baseUrl}/coursier`
-      console.log(`Downloading ${url}`)
-      const jarDownloaded = await tc.downloadTool(url)
+  }
 
-      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-thin-'))
-      fs.copyFileSync(jarDownloaded, path.join(tempDir, 'coursier'))
-      fs.writeFileSync(path.join(tempDir, 'cs.bat'), '@echo off\njava -jar "%~dp0coursier" %*\n')
+  const url = `${baseUrl}/coursier`
+  console.log(`Downloading ${url}`)
+  const filePath = await tc.downloadTool(url)
+  if (process.platform !== 'win32') {
+    await cli.exec('chmod', ['+x', filePath])
+    return { path: filePath, isDir: false }
+  }
 
-      return { path: tempDir, isDir: true }
-    } else {
-      const url = `${baseUrl}/coursier`
-      console.log(`Downloading ${url}`)
-      const filePath = await tc.downloadTool(url)
-      await cli.exec('chmod', ['+x', filePath])
-      return { path: filePath, isDir: false }
-    }
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-thin-'))
+  fs.copyFileSync(filePath, path.join(tempDir, 'coursier'))
+  fs.writeFileSync(path.join(tempDir, 'cs.bat'), '@echo off\njava -jar "%~dp0coursier" %*\n')
+  return { path: tempDir, isDir: true }
+}
+
+async function installJvmCoursier(launcherType: 'thin' | 'assembly'): Promise<void> {
+  const toolName = `cs-${launcherType}`
+  const previous = tc.find(toolName, csVersion)
+  if (previous) {
+    core.addPath(previous)
+    return
+  }
+
+  const { path: binaryPath, isDir } = await downloadJvmCoursier(launcherType)
+  if (!isDir) {
+    const csCached = await tc.cacheFile(binaryPath, 'cs', toolName, csVersion)
+    core.addPath(csCached)
+    return
+  }
+
+  try {
+    const csCached = await tc.cacheDir(binaryPath, toolName, csVersion)
+    core.addPath(csCached)
+  } finally {
+    fs.rmSync(binaryPath, { recursive: true, force: true })
   }
 }
 
-async function downloadCoursier(): Promise<string> {
+async function downloadCoursier(launcher: string): Promise<string> {
   const architecture = getCoursierArchitecture(process.arch)
   const baseUrl = `${coursierBinariesGithubRepository}/releases/download/v${csVersion}/cs-${architecture}`
+  const launcherSuffix = launcher ? `-${launcher}` : ''
   let csBinary = ''
   switch (process.platform) {
     case 'linux': {
-      const useContainerImageInput = core.getBooleanInput('useContainerImage')
-      const url = useContainerImageInput
-        ? `${baseUrl}-pc-linux-container.gz`
-        : `${baseUrl}-pc-linux.gz`
+      const url = `${baseUrl}-pc-linux${launcherSuffix}.gz`
       console.log(`Downloading ${url}`)
       const guid = await tc.downloadTool(url)
       const archive = `${guid}.gz`
@@ -112,7 +134,7 @@ async function downloadCoursier(): Promise<string> {
       break
     }
     case 'darwin': {
-      const url = `${baseUrl}-apple-darwin.gz`
+      const url = `${baseUrl}-apple-darwin${launcherSuffix}.gz`
       console.log(`Downloading ${url}`)
       const guid = await tc.downloadTool(url)
       const archive = `${guid}.gz`
@@ -121,7 +143,7 @@ async function downloadCoursier(): Promise<string> {
       break
     }
     case 'win32': {
-      const url = `${baseUrl}-pc-win32.zip`
+      const url = `${baseUrl}-pc-win32${launcherSuffix}.zip`
       console.log(`Downloading ${url}`)
       const guid = await tc.downloadTool(url)
       const archive = `${guid}.zip`
@@ -147,44 +169,64 @@ async function downloadCoursier(): Promise<string> {
 }
 
 async function cs(...args: string[]): Promise<string> {
-  const launcherInput = core.getInput('launcher').toLowerCase()
-  const launcherType: 'native' | 'thin' | 'assembly' =
-    launcherInput === 'thin' || launcherInput === 'jvm'
-      ? 'thin'
-      : launcherInput === 'assembly'
-        ? 'assembly'
-        : 'native'
-  const toolName = launcherType === 'native' ? 'cs' : `cs-${launcherType}`
-
-  const previous = tc.find(toolName, csVersion)
-  if (previous) {
-    core.addPath(previous)
+  const requiredLauncher = launcherInput('launcher')
+  const preferredLauncher = launcherInput('preferredLauncher')
+  const normalizedLauncher = requiredLauncher.toLowerCase()
+  const normalizedPreferredLauncher = preferredLauncher.toLowerCase()
+  const jvmLaunchers = ['thin', 'jvm', 'assembly']
+  if (jvmLaunchers.includes(normalizedPreferredLauncher)) {
+    throw new Error(
+      `preferredLauncher only accepts native launcher flavors; use launcher for the JVM launcher "${preferredLauncher}"`,
+    )
+  }
+  if (requiredLauncher && preferredLauncher) {
+    throw new Error('launcher and preferredLauncher cannot both be set')
+  }
+  const useContainerImage = core.getBooleanInput('useContainerImage')
+  if (useContainerImage && !warnedAboutUseContainerImage) {
+    core.warning('useContainerImage is deprecated; use launcher: container instead')
+    warnedAboutUseContainerImage = true
+  }
+  if (jvmLaunchers.includes(normalizedLauncher)) {
+    await installJvmCoursier(normalizedLauncher === 'assembly' ? 'assembly' : 'thin')
   } else {
-    if (launcherType === 'thin') {
-      const { path: binaryPath, isDir } = await downloadJvmCoursier(launcherType)
-      if (isDir) {
-        try {
-          const csCached = await tc.cacheDir(binaryPath, toolName, csVersion)
-          core.addPath(csCached)
-        } finally {
-          fs.rmSync(binaryPath, { recursive: true, force: true })
-        }
-      } else {
-        const csCached = await tc.cacheFile(binaryPath, 'cs', toolName, csVersion)
-        core.addPath(csCached)
-      }
-    } else if (launcherType === 'assembly') {
-      const { path: binaryPath } = await downloadJvmCoursier(launcherType)
-      try {
-        const csCached = await tc.cacheDir(binaryPath, toolName, csVersion)
-        core.addPath(csCached)
-      } finally {
-        fs.rmSync(binaryPath, { recursive: true, force: true })
-      }
+    // Keep the old flag working, but let either of the new inputs take precedence.
+    const configuredLauncher =
+      requiredLauncher || preferredLauncher || (useContainerImage ? 'container' : '')
+    const requestedLauncher = resolvedLauncher ?? configuredLauncher
+    const toolName = requestedLauncher ? `cs-launcher-${requestedLauncher}` : 'cs'
+
+    const previous = tc.find(toolName, csVersion)
+    if (previous) {
+      resolvedLauncher = requestedLauncher
+      core.addPath(previous)
     } else {
-      const csBinary = await downloadCoursier()
+      let downloadedLauncher = requestedLauncher
+      let csBinary: string
+      try {
+        csBinary = await downloadCoursier(requestedLauncher)
+      } catch (error: unknown) {
+        if (
+          preferredLauncher &&
+          resolvedLauncher === undefined &&
+          error instanceof tc.HTTPError &&
+          error.httpStatusCode !== undefined &&
+          error.httpStatusCode >= 400 &&
+          error.httpStatusCode < 500
+        ) {
+          core.warning(
+            `Preferred Coursier launcher "${preferredLauncher}" is not available (HTTP ${error.httpStatusCode}); falling back to the default launcher`,
+          )
+          downloadedLauncher = ''
+          csBinary = await downloadCoursier('')
+        } else {
+          throw error
+        }
+      }
       const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs'
-      const csCached = await tc.cacheFile(csBinary, binaryName, 'cs', csVersion)
+      const downloadedToolName = downloadedLauncher ? `cs-launcher-${downloadedLauncher}` : 'cs'
+      const csCached = await tc.cacheFile(csBinary, binaryName, downloadedToolName, csVersion)
+      resolvedLauncher = downloadedLauncher
       core.addPath(csCached)
     }
   }
