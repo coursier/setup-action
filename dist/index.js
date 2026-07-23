@@ -22814,6 +22814,9 @@ function debug(message) {
 function error(message, properties = {}) {
   issueCommand("error", toCommandProperties(properties), message instanceof Error ? message.toString() : message);
 }
+function warning(message, properties = {}) {
+  issueCommand("warning", toCommandProperties(properties), message instanceof Error ? message.toString() : message);
+}
 function info(message) {
   process.stdout.write(message + os5.EOL);
 }
@@ -23176,6 +23179,8 @@ var defaultVersion = "2.1.25-M19";
 var csVersion = getInput("version") || defaultVersion;
 var useVirtusLabRepo = process.arch === "arm64" && (process.platform == "darwin" && (0, import_compare_versions.compareVersions)(csVersion.replace("-M", "."), "2.1.16") < 0 || process.platform == "linux" && (0, import_compare_versions.compareVersions)(csVersion.replace("-M", "."), "2.1.25.3") < 0);
 var coursierBinariesGithubRepository = useVirtusLabRepo ? "https://github.com/VirtusLab/coursier-m1/" : "https://github.com/coursier/coursier/";
+var resolvedLauncher;
+var warnedAboutUseContainerImage = false;
 function getCoursierArchitecture(arch3) {
   if (arch3 === "x64") {
     return "x86_64";
@@ -23197,54 +23202,76 @@ async function execOutput(cmd, ...args) {
   await exec(cmd, args.filter(Boolean), options);
   return output.trim();
 }
+function launcherInput(name) {
+  const value = getInput(name).trim();
+  if (value && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value)) {
+    throw new Error(`Invalid ${name} value: ${value}`);
+  }
+  return value;
+}
 async function downloadJvmCoursier(launcherType) {
   const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}`;
   if (launcherType === "assembly") {
-    const url = `${baseUrl}/coursier.jar`;
-    console.log(`Downloading ${url}`);
-    const jarDownloaded = await downloadTool(url);
-    const tempDir = fs4.mkdtempSync(path6.join(os7.tmpdir(), "cs-assembly-"));
-    fs4.copyFileSync(jarDownloaded, path6.join(tempDir, "coursier.jar"));
+    const url2 = `${baseUrl}/coursier.jar`;
+    console.log(`Downloading ${url2}`);
+    const jarDownloaded = await downloadTool(url2);
+    const tempDir2 = fs4.mkdtempSync(path6.join(os7.tmpdir(), "cs-assembly-"));
+    fs4.copyFileSync(jarDownloaded, path6.join(tempDir2, "coursier.jar"));
     if (process.platform === "win32") {
       fs4.writeFileSync(
-        path6.join(tempDir, "cs.bat"),
+        path6.join(tempDir2, "cs.bat"),
         '@echo off\njava -jar "%~dp0coursier.jar" %*\n'
       );
     } else {
-      const wrapperPath = path6.join(tempDir, "cs");
+      const wrapperPath = path6.join(tempDir2, "cs");
       fs4.writeFileSync(
         wrapperPath,
         '#!/bin/sh\nexec java -jar "$(dirname "$0")/coursier.jar" "$@"\n'
       );
       fs4.chmodSync(wrapperPath, 493);
     }
-    return { path: tempDir, isDir: true };
-  } else {
-    if (process.platform === "win32") {
-      const url = `${baseUrl}/coursier`;
-      console.log(`Downloading ${url}`);
-      const jarDownloaded = await downloadTool(url);
-      const tempDir = fs4.mkdtempSync(path6.join(os7.tmpdir(), "cs-thin-"));
-      fs4.copyFileSync(jarDownloaded, path6.join(tempDir, "coursier"));
-      fs4.writeFileSync(path6.join(tempDir, "cs.bat"), '@echo off\njava -jar "%~dp0coursier" %*\n');
-      return { path: tempDir, isDir: true };
-    } else {
-      const url = `${baseUrl}/coursier`;
-      console.log(`Downloading ${url}`);
-      const filePath = await downloadTool(url);
-      await exec("chmod", ["+x", filePath]);
-      return { path: filePath, isDir: false };
-    }
+    return { path: tempDir2, isDir: true };
+  }
+  const url = `${baseUrl}/coursier`;
+  console.log(`Downloading ${url}`);
+  const filePath = await downloadTool(url);
+  if (process.platform !== "win32") {
+    await exec("chmod", ["+x", filePath]);
+    return { path: filePath, isDir: false };
+  }
+  const tempDir = fs4.mkdtempSync(path6.join(os7.tmpdir(), "cs-thin-"));
+  fs4.copyFileSync(filePath, path6.join(tempDir, "coursier"));
+  fs4.writeFileSync(path6.join(tempDir, "cs.bat"), '@echo off\njava -jar "%~dp0coursier" %*\n');
+  return { path: tempDir, isDir: true };
+}
+async function installJvmCoursier(launcherType) {
+  const toolName = `cs-${launcherType}`;
+  const previous = find(toolName, csVersion);
+  if (previous) {
+    addPath(previous);
+    return;
+  }
+  const { path: binaryPath, isDir } = await downloadJvmCoursier(launcherType);
+  if (!isDir) {
+    const csCached = await cacheFile(binaryPath, "cs", toolName, csVersion);
+    addPath(csCached);
+    return;
+  }
+  try {
+    const csCached = await cacheDir(binaryPath, toolName, csVersion);
+    addPath(csCached);
+  } finally {
+    fs4.rmSync(binaryPath, { recursive: true, force: true });
   }
 }
-async function downloadCoursier() {
+async function downloadCoursier(launcher) {
   const architecture = getCoursierArchitecture(process.arch);
   const baseUrl = `${coursierBinariesGithubRepository}/releases/download/v${csVersion}/cs-${architecture}`;
+  const launcherSuffix = launcher ? `-${launcher}` : "";
   let csBinary = "";
   switch (process.platform) {
     case "linux": {
-      const useContainerImageInput = getBooleanInput("useContainerImage");
-      const url = useContainerImageInput ? `${baseUrl}-pc-linux-container.gz` : `${baseUrl}-pc-linux.gz`;
+      const url = `${baseUrl}-pc-linux${launcherSuffix}.gz`;
       console.log(`Downloading ${url}`);
       const guid = await downloadTool(url);
       const archive = `${guid}.gz`;
@@ -23253,7 +23280,7 @@ async function downloadCoursier() {
       break;
     }
     case "darwin": {
-      const url = `${baseUrl}-apple-darwin.gz`;
+      const url = `${baseUrl}-apple-darwin${launcherSuffix}.gz`;
       console.log(`Downloading ${url}`);
       const guid = await downloadTool(url);
       const archive = `${guid}.gz`;
@@ -23262,7 +23289,7 @@ async function downloadCoursier() {
       break;
     }
     case "win32": {
-      const url = `${baseUrl}-pc-win32.zip`;
+      const url = `${baseUrl}-pc-win32${launcherSuffix}.zip`;
       console.log(`Downloading ${url}`);
       const guid = await downloadTool(url);
       const archive = `${guid}.zip`;
@@ -23287,38 +23314,54 @@ async function downloadCoursier() {
   return csBinary;
 }
 async function cs(...args) {
-  const launcherInput = getInput("launcher").toLowerCase();
-  const launcherType = launcherInput === "thin" || launcherInput === "jvm" ? "thin" : launcherInput === "assembly" ? "assembly" : "native";
-  const toolName = launcherType === "native" ? "cs" : `cs-${launcherType}`;
-  const previous = find(toolName, csVersion);
-  if (previous) {
-    addPath(previous);
+  const requiredLauncher = launcherInput("launcher");
+  const preferredLauncher = launcherInput("preferredLauncher");
+  const normalizedLauncher = requiredLauncher.toLowerCase();
+  const normalizedPreferredLauncher = preferredLauncher.toLowerCase();
+  const jvmLaunchers = ["thin", "jvm", "assembly"];
+  if (jvmLaunchers.includes(normalizedPreferredLauncher)) {
+    throw new Error(
+      `preferredLauncher only accepts native launcher flavors; use launcher for the JVM launcher "${preferredLauncher}"`
+    );
+  }
+  if (requiredLauncher && preferredLauncher) {
+    throw new Error("launcher and preferredLauncher cannot both be set");
+  }
+  const useContainerImage = getBooleanInput("useContainerImage");
+  if (useContainerImage && !warnedAboutUseContainerImage) {
+    warning("useContainerImage is deprecated; use launcher: container instead");
+    warnedAboutUseContainerImage = true;
+  }
+  if (jvmLaunchers.includes(normalizedLauncher)) {
+    await installJvmCoursier(normalizedLauncher === "assembly" ? "assembly" : "thin");
   } else {
-    if (launcherType === "thin") {
-      const { path: binaryPath, isDir } = await downloadJvmCoursier(launcherType);
-      if (isDir) {
-        try {
-          const csCached = await cacheDir(binaryPath, toolName, csVersion);
-          addPath(csCached);
-        } finally {
-          fs4.rmSync(binaryPath, { recursive: true, force: true });
-        }
-      } else {
-        const csCached = await cacheFile(binaryPath, "cs", toolName, csVersion);
-        addPath(csCached);
-      }
-    } else if (launcherType === "assembly") {
-      const { path: binaryPath } = await downloadJvmCoursier(launcherType);
-      try {
-        const csCached = await cacheDir(binaryPath, toolName, csVersion);
-        addPath(csCached);
-      } finally {
-        fs4.rmSync(binaryPath, { recursive: true, force: true });
-      }
+    const configuredLauncher = requiredLauncher || preferredLauncher || (useContainerImage ? "container" : "");
+    const requestedLauncher = resolvedLauncher ?? configuredLauncher;
+    const toolName = requestedLauncher ? `cs-launcher-${requestedLauncher}` : "cs";
+    const previous = find(toolName, csVersion);
+    if (previous) {
+      resolvedLauncher = requestedLauncher;
+      addPath(previous);
     } else {
-      const csBinary = await downloadCoursier();
+      let downloadedLauncher = requestedLauncher;
+      let csBinary;
+      try {
+        csBinary = await downloadCoursier(requestedLauncher);
+      } catch (error2) {
+        if (preferredLauncher && resolvedLauncher === void 0 && error2 instanceof HTTPError && error2.httpStatusCode !== void 0 && error2.httpStatusCode >= 400 && error2.httpStatusCode < 500) {
+          warning(
+            `Preferred Coursier launcher "${preferredLauncher}" is not available (HTTP ${error2.httpStatusCode}); falling back to the default launcher`
+          );
+          downloadedLauncher = "";
+          csBinary = await downloadCoursier("");
+        } else {
+          throw error2;
+        }
+      }
       const binaryName = process.platform === "win32" ? "cs.exe" : "cs";
-      const csCached = await cacheFile(csBinary, binaryName, "cs", csVersion);
+      const downloadedToolName = downloadedLauncher ? `cs-launcher-${downloadedLauncher}` : "cs";
+      const csCached = await cacheFile(csBinary, binaryName, downloadedToolName, csVersion);
+      resolvedLauncher = downloadedLauncher;
       addPath(csCached);
     }
   }
