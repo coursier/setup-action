@@ -163,6 +163,7 @@ async function cs(...args: string[]): Promise<string> {
   const toolName = launcherType === 'native' ? 'cs' : `cs-${launcherType}`
 
   const previous = tc.find(toolName, csVersion)
+  let csCached = previous
   if (previous) {
     core.addPath(previous)
   } else {
@@ -170,19 +171,19 @@ async function cs(...args: string[]): Promise<string> {
       const { path: binaryPath, isDir } = await downloadJvmCoursier(launcherType)
       if (isDir) {
         try {
-          const csCached = await tc.cacheDir(binaryPath, toolName, csVersion)
+          csCached = await tc.cacheDir(binaryPath, toolName, csVersion)
           core.addPath(csCached)
         } finally {
           fs.rmSync(binaryPath, { recursive: true, force: true })
         }
       } else {
-        const csCached = await tc.cacheFile(binaryPath, 'cs', toolName, csVersion)
+        csCached = await tc.cacheFile(binaryPath, 'cs', toolName, csVersion)
         core.addPath(csCached)
       }
     } else if (launcherType === 'assembly') {
       const { path: binaryPath } = await downloadJvmCoursier(launcherType)
       try {
-        const csCached = await tc.cacheDir(binaryPath, toolName, csVersion)
+        csCached = await tc.cacheDir(binaryPath, toolName, csVersion)
         core.addPath(csCached)
       } finally {
         fs.rmSync(binaryPath, { recursive: true, force: true })
@@ -196,8 +197,9 @@ async function cs(...args: string[]): Promise<string> {
   }
 
   const extraJvmArgsInput = core.getInput('extraJvmArgs')
+  let extraJvmArgs: string[] = []
   if (extraJvmArgsInput) {
-    const extraArgs = extraJvmArgsInput
+    extraJvmArgs = extraJvmArgsInput
       .trim()
       .split(/\s+/)
       .map(raw => {
@@ -209,7 +211,6 @@ async function cs(...args: string[]): Promise<string> {
         }
         return arg
       })
-    args = [...extraArgs, ...args]
   }
 
   const disableDefaultReposInput = core.getInput('disableDefaultRepos')
@@ -228,7 +229,18 @@ async function cs(...args: string[]): Promise<string> {
     })
   }
 
-  return execOutput('cs', ...args)
+  if (process.platform === 'win32' && launcherType !== 'native') {
+    const jarName = launcherType === 'assembly' ? 'coursier.jar' : 'coursier'
+    return execOutput(
+      'java',
+      ...extraJvmArgs.map(arg => arg.slice(2)),
+      '-jar',
+      path.join(csCached, jarName),
+      ...args,
+    )
+  }
+
+  return execOutput('cs', ...extraJvmArgs, ...args)
 }
 
 function writeMirrorsFile(): void {
