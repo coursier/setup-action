@@ -38,11 +38,15 @@ inputs:
     required: false
     default: ''
   useContainerImage:
-    description: 'Use the container-compatible Coursier launcher. When enabled, the action downloads the *-container launcher variant (built with -H:-UseContainerSupport).'
+    description: 'Deprecated alias for launcher: container.'
     required: false
     default: 'false'
   launcher:
-    description: 'Coursier launcher type to use. Leave empty (default) for the native binary launcher. Set to "thin" or "jvm" to use the thin JVM launcher (requires Java in PATH). Set to "assembly" to use the assembly (fat jar) launcher (requires Java in PATH).'
+    description: 'Coursier launcher to use. Leave empty (default) to install the default native binary launcher when available, or a JVM launcher on platforms without one. Accepts JVM launchers "thin", "jvm", and "assembly", or native launcher flavors such as "container", "compat", and "static".'
+    required: false
+    default: ''
+  preferredLauncher:
+    description: 'Preferred native Coursier launcher flavor (for example, "container", "compat", or "static"). Falls back to the default launcher when the flavored launcher returns a 4xx HTTP response. JVM launcher values are not accepted.'
     required: false
     default: ''
 outputs:
