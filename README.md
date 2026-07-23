@@ -42,10 +42,18 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
   - Space-separated list of `-D` JVM property args passed to every `cs` invocation. The `-J` prefix is added automatically if missing.
   - e.g. `-Dhttps.proxyHost=proxy.example.com -Dhttps.proxyPort=8080`
 
-- `launcher` (optional): Coursier launcher type
-  - Leave empty (default) to use the native binary launcher (no Java required).
-  - Set to `thin` or `jvm` to use the [thin JVM launcher](https://get-coursier.io/docs/cli-installation) (`coursier` / `coursier.bat`). **Requires Java to be installed beforehand** (e.g. via `actions/setup-java`).
-  - Set to `assembly` to use the assembly (fat jar) launcher (`coursier.jar`). **Requires Java to be installed beforehand** (e.g. via `actions/setup-java`).
+- `launcher` (optional): Coursier launcher
+  - Leave empty (default) to install the default native binary launcher when available, or a JVM launcher on platforms that do not have a native launcher.
+  - `thin` (or `jvm`) selects the thin JVM launcher and `assembly` selects the assembly (fat JAR) launcher. These require Java to be installed beforehand.
+  - Other values select a native launcher flavor. Available flavors include `container`, `compat`, and `static`; for example, `container` downloads the launcher whose filename ends in `-container`.
+  - The action fails when the selected launcher is not available for the selected version and platform.
+
+- `preferredLauncher` (optional): Preferred Coursier launcher flavor
+  - Downloads the same launcher as `launcher`, but falls back to the default launcher with a warning when the flavored download returns a 4xx HTTP response.
+  - The JVM launcher values `thin`, `jvm`, and `assembly` are rejected; pass those via `launcher`.
+  - Cannot be used together with `launcher`.
+
+- `useContainerImage` (optional): Deprecated alias for `launcher: container`.
 
 ### Example with custom inputs
 
