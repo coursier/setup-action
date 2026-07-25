@@ -73,7 +73,7 @@ jobs:
     - run: cs java -version
 
     # test installed apps
-    - run: sbt show name
+    - run: sbt "show name"
       if: runner.os == 'Windows' && runner.arch == 'ARM64'
     - run: sbtn.bat show name </dev/null
       shell: bash
