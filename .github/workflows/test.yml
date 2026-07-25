@@ -61,7 +61,7 @@ jobs:
       uses: ./
       with:
         jvm: ${{ matrix.jvm }}
-        apps: sbt sbtn ammonite bloop
+        apps: ${{ runner.os == 'Windows' && runner.arch == 'ARM64' && 'sbt ammonite bloop' || 'sbt sbtn ammonite bloop' }}
 
     # - uses: coursier/cache-action@v5
     - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
@@ -73,9 +73,11 @@ jobs:
     - run: cs java -version
 
     # test installed apps
+    - run: sbt show name
+      if: runner.os == 'Windows' && runner.arch == 'ARM64'
     - run: sbtn.bat show name </dev/null
       shell: bash
-      if: runner.os == 'Windows'
+      if: runner.os == 'Windows' && runner.arch != 'ARM64'
     - run: sbtn show name
       if: runner.os != 'Windows'
     - run: amm --help
