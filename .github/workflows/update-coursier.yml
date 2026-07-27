@@ -1,0 +1,55 @@
+name: Update Coursier
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * *'
+      timezone: Europe/Paris
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-coursier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Get latest Coursier release
+        id: coursier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          version=$(
+            gh api 'repos/coursier/coursier/releases?per_page=100' \
+              --jq 'map(select(.draft | not))[0].tag_name'
+          )
+          version=${version#v}
+          if [[ ! "$version" =~ ^[0-9]+(\.[0-9]+)+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Unexpected Coursier release version: $version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Update default Coursier version
+        env:
+          VERSION: ${{ steps.coursier.outputs.version }}
+        shell: bash
+        run: |
+          sed -i -E \
+            "s/^const defaultVersion = '[^']+'$/const defaultVersion = '$VERSION'/" \
+            src/main.ts
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: update-coursier
+          delete-branch: true
+          commit-message: Update Coursier to ${{ steps.coursier.outputs.version }}
+          title: Update Coursier to ${{ steps.coursier.outputs.version }}
+          body: |
+            Updates the default Coursier version to `${{ steps.coursier.outputs.version }}`.
+
+            This includes prerelease versions published by coursier/coursier.
