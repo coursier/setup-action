@@ -18,7 +18,7 @@ inputs:
     required: false
     default: 'sbtn'
   version:
-    description: 'Coursier version to install'
+    description: 'Coursier version to install (use "nightly" for the latest nightly build from https://github.com/coursier/coursier/releases/tag/nightly)'
     required: false
     default: ''
   customRepositories:

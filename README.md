@@ -26,6 +26,10 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
 - `apps` (optional): Scala apps to install (`sbtn` by default)
   - space separated list of app names (from the [main channel](https://github.com/coursier/apps))
 
+- `version` (optional): Coursier version to install
+  - a release version such as `2.1.25-M26` (defaults to a recent release when left empty)
+  - `nightly` installs the latest [nightly build](https://github.com/coursier/coursier/releases/tag/nightly)
+
 - `customRepositories` (optional): ''
   - Pipe separated list of [repositories](https://get-coursier.io/docs/other-repositories) to supply to coursier
 
@@ -69,6 +73,16 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
         customRepositories: https://packages.corp.com/maven
         mirrors: |
           https://repo1.maven.org/maven2=https://packages.corp.com/maven
+```
+
+### Nightly Coursier
+
+```yml
+  steps:
+    - uses: actions/checkout@v4
+    - uses: coursier/setup-action@v3
+      with:
+        version: nightly
 ```
 
 ## Outputs
