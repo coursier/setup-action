@@ -125,3 +125,36 @@ jobs:
     - run: echo cs-version=${{ steps.cs-setup-jvm-launcher.outputs.cs-version }}
     - run: cs --help
     - run: java -version
+
+  test-nightly:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15, windows-latest]
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24
+        cache: 'npm'
+
+    - name: Build
+      shell: bash
+      run: |
+        npm ci
+        npm run package
+
+    - id: cs-setup-nightly
+      uses: ./
+      with:
+        version: nightly
+        apps: ''
+
+    - run: echo cs-version=${{ steps.cs-setup-nightly.outputs.cs-version }}
+    - name: Verify nightly version output
+      shell: bash
+      run: |
+        test "${{ steps.cs-setup-nightly.outputs.cs-version }}" = "nightly"
+    - run: cs --help
