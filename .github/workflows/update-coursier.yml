@@ -31,6 +31,7 @@ jobs:
             echo "::error::Unexpected Coursier release version: $version"
             exit 1
           fi
+          echo "Latest Coursier version: $version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Update default Coursier version
@@ -51,5 +52,3 @@ jobs:
           title: Update Coursier to ${{ steps.coursier.outputs.version }}
           body: |
             Updates the default Coursier version to `${{ steps.coursier.outputs.version }}`.
-
-            This includes prerelease versions published by coursier/coursier.

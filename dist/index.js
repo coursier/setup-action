@@ -23175,7 +23175,7 @@ function _getGlobal(key, defaultValue) {
 
 // src/main.ts
 var import_compare_versions = __toESM(require_umd());
-var defaultVersion = "2.1.25-M19";
+var defaultVersion = "2.1.25-M26";
 var csVersion = getInput("version") || defaultVersion;
 var useVirtusLabRepo = process.arch === "arm64" && (process.platform == "darwin" && (0, import_compare_versions.compareVersions)(csVersion.replace("-M", "."), "2.1.16") < 0 || process.platform == "linux" && (0, import_compare_versions.compareVersions)(csVersion.replace("-M", "."), "2.1.25.3") < 0);
 var coursierBinariesGithubRepository = useVirtusLabRepo ? "https://github.com/VirtusLab/coursier-m1/" : "https://github.com/coursier/coursier/";
