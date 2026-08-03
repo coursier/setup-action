@@ -119,10 +119,20 @@ async function installJvmCoursier(launcherType: 'thin' | 'assembly'): Promise<st
   }
 }
 
-async function downloadCoursier(launcher: string): Promise<string> {
+async function downloadCoursier(launcher: string): Promise<{ path: string; isDir: boolean }> {
   const architecture = getCoursierArchitecture(process.arch)
+  // Windows ARM64 has no GraalVM native image; the default artifact is the jpackage JVM distribution
+  // (cs-aarch64-pc-win32-jvm.zip), which embeds a runtime under app/ and runtime/.
+  const effectiveLauncher =
+    launcher !== ''
+      ? launcher
+      : process.platform === 'win32' && process.arch === 'arm64'
+        ? 'jvm'
+        : ''
   const baseUrl = `${coursierBinariesGithubRepository}/releases/download/v${csVersion}/cs-${architecture}`
-  const launcherSuffix = launcher ? `-${launcher}` : ''
+  const launcherSuffix = effectiveLauncher ? `-${effectiveLauncher}` : ''
+  const isWindowsJvmPackagedLauncher =
+    process.platform === 'win32' && process.arch === 'arm64' && effectiveLauncher === 'jvm'
   let csBinary = ''
   switch (process.platform) {
     case 'linux': {
@@ -162,11 +172,16 @@ async function downloadCoursier(launcher: string): Promise<string> {
   }
   if (csBinary.endsWith('.zip')) {
     const destDir = csBinary.slice(0, csBinary.length - '.zip'.length)
+    if (isWindowsJvmPackagedLauncher) {
+      // jpackage layout: cs.exe plus app/ and runtime/ — keep the full tree.
+      await cli.exec('unzip', [csBinary, '-d', destDir])
+      return { path: destDir, isDir: true }
+    }
     await cli.exec('unzip', ['-j', csBinary, `cs-${architecture}-pc-win32.exe`, '-d', destDir])
     csBinary = `${destDir}\\cs-${architecture}-pc-win32.exe`
   }
   await cli.exec('chmod', ['+x', csBinary])
-  return csBinary
+  return { path: csBinary, isDir: false }
 }
 
 async function cs(...args: string[]): Promise<string> {
@@ -188,24 +203,17 @@ async function cs(...args: string[]): Promise<string> {
     core.warning('useContainerImage is deprecated; use launcher: container instead')
     warnedAboutUseContainerImage = true
   }
-  const defaultToThin =
-    process.platform === 'win32' &&
-    process.arch === 'arm64' &&
-    !requiredLauncher &&
-    !preferredLauncher &&
-    !useContainerImage
   const jvmLauncherType: 'thin' | 'assembly' | undefined = jvmLaunchers.includes(normalizedLauncher)
     ? normalizedLauncher === 'assembly'
       ? 'assembly'
       : 'thin'
-    : defaultToThin
-      ? 'thin'
-      : undefined
+    : undefined
   let jvmLauncherPath: string | undefined
   if (jvmLauncherType) {
     jvmLauncherPath = await installJvmCoursier(jvmLauncherType)
   } else {
     // Keep the old flag working, but let either of the new inputs take precedence.
+    // Empty launcher on Windows ARM64 downloads cs-aarch64-pc-win32-jvm.zip (see downloadCoursier).
     const configuredLauncher =
       requiredLauncher || preferredLauncher || (useContainerImage ? 'container' : '')
     const requestedLauncher = resolvedLauncher ?? configuredLauncher
@@ -217,9 +225,9 @@ async function cs(...args: string[]): Promise<string> {
       core.addPath(previous)
     } else {
       let downloadedLauncher = requestedLauncher
-      let csBinary: string
+      let downloaded: { path: string; isDir: boolean }
       try {
-        csBinary = await downloadCoursier(requestedLauncher)
+        downloaded = await downloadCoursier(requestedLauncher)
       } catch (error: unknown) {
         if (
           preferredLauncher &&
@@ -233,14 +241,16 @@ async function cs(...args: string[]): Promise<string> {
             `Preferred Coursier launcher "${preferredLauncher}" is not available (HTTP ${error.httpStatusCode}); falling back to the default launcher`,
           )
           downloadedLauncher = ''
-          csBinary = await downloadCoursier('')
+          downloaded = await downloadCoursier('')
         } else {
           throw error
         }
       }
       const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs'
       const downloadedToolName = downloadedLauncher ? `cs-launcher-${downloadedLauncher}` : 'cs'
-      const csCached = await tc.cacheFile(csBinary, binaryName, downloadedToolName, csVersion)
+      const csCached = downloaded.isDir
+        ? await tc.cacheDir(downloaded.path, downloadedToolName, csVersion)
+        : await tc.cacheFile(downloaded.path, binaryName, downloadedToolName, csVersion)
       resolvedLauncher = downloadedLauncher
       core.addPath(csCached)
     }

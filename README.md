@@ -43,7 +43,7 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
   - e.g. `-Dhttps.proxyHost=proxy.example.com -Dhttps.proxyPort=8080`
 
 - `launcher` (optional): Coursier launcher
-  - Leave empty (default) to install the default native binary launcher when available, or a JVM launcher on platforms that do not have a native launcher.
+  - Leave empty (default) to install the default native binary launcher when available. On Windows ARM64, that is the jpackage JVM distribution (`cs-aarch64-pc-win32-jvm.zip`), which embeds its own runtime.
   - `thin` (or `jvm`) selects the thin JVM launcher and `assembly` selects the assembly (fat JAR) launcher. These require Java to be installed beforehand.
   - Other values select a native launcher flavor. Available flavors include `container`, `compat`, and `static`; for example, `container` downloads the launcher whose filename ends in `-container`.
   - The action fails when the selected launcher is not available for the selected version and platform.

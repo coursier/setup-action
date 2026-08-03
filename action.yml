@@ -42,7 +42,7 @@ inputs:
     required: false
     default: 'false'
   launcher:
-    description: 'Coursier launcher to use. Leave empty (default) to install the default native binary launcher when available, or a JVM launcher on platforms without one. Accepts JVM launchers "thin", "jvm", and "assembly", or native launcher flavors such as "container", "compat", and "static".'
+    description: 'Coursier launcher to use. Leave empty (default) to install the default native binary launcher when available (on Windows ARM64, the jpackage JVM distribution cs-aarch64-pc-win32-jvm.zip). Accepts JVM launchers "thin", "jvm", and "assembly", or native launcher flavors such as "container", "compat", and "static".'
     required: false
     default: ''
   preferredLauncher:
