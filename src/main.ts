@@ -32,14 +32,21 @@ function getCoursierArchitecture(arch: string): string {
   }
 }
 
-async function execOutput(cmd: string, ...args: string[]): Promise<string> {
+async function execOutput(
+  cmd: string,
+  args: string[],
+  env?: { [key: string]: string },
+): Promise<string> {
   let output = ''
-  const options = {
+  const options: cli.ExecOptions = {
     listeners: {
       stdout: (data: Buffer) => {
         output += data.toString()
       },
     },
+  }
+  if (env) {
+    options.env = env
   }
   await cli.exec(cmd, args.filter(Boolean), options)
   return output.trim()
@@ -291,16 +298,27 @@ async function cs(...args: string[]): Promise<string> {
 
   if (process.platform === 'win32' && jvmLauncherType && jvmLauncherPath) {
     const jarName = jvmLauncherType === 'assembly' ? 'coursier.jar' : 'coursier'
-    return execOutput(
-      'java',
+    return execOutput('java', [
       ...extraJvmArgs.map(arg => arg.slice(2)),
       '-jar',
       path.join(jvmLauncherPath, jarName),
       ...args,
-    )
+    ])
   }
 
-  return execOutput('cs', ...extraJvmArgs, ...args)
+  // The Windows ARM64 jpackage launcher (cs-aarch64-pc-win32-jvm.zip) does not support
+  // GraalVM-style -J flags; they are treated as application args and break CLI parsing.
+  // Pass extra JVM properties via JAVA_TOOL_OPTIONS instead.
+  const usesWindowsJvmPackagedLauncher =
+    process.platform === 'win32' && process.arch === 'arm64' && !jvmLauncherType
+  if (usesWindowsJvmPackagedLauncher && extraJvmArgs.length) {
+    const toolOptions = extraJvmArgs.map(arg => arg.slice(2)).join(' ')
+    const env: { [key: string]: string } = { ...process.env } as { [key: string]: string }
+    env.JAVA_TOOL_OPTIONS = [process.env.JAVA_TOOL_OPTIONS, toolOptions].filter(Boolean).join(' ')
+    return execOutput('cs', args, env)
+  }
+
+  return execOutput('cs', [...extraJvmArgs, ...args])
 }
 
 function writeMirrorsFile(): void {
