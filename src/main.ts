@@ -12,7 +12,12 @@ import { compareVersions } from 'compare-versions'
 const defaultVersion = '2.1.25-M26'
 
 const csVersion = core.getInput('version') || defaultVersion
+// Nightly builds are published under the fixed tag "nightly" (no "v" prefix).
+// See https://github.com/coursier/coursier/releases/tag/nightly
+const isNightly = csVersion === 'nightly'
+const releaseTag = isNightly ? 'nightly' : `v${csVersion}`
 const useVirtusLabRepo =
+  !isNightly &&
   process.arch === 'arm64' &&
   ((process.platform == 'darwin' && compareVersions(csVersion.replace('-M', '.'), '2.1.16') < 0) ||
     (process.platform == 'linux' && compareVersions(csVersion.replace('-M', '.'), '2.1.25.3') < 0))
@@ -63,7 +68,7 @@ function launcherInput(name: 'launcher' | 'preferredLauncher'): string {
 async function downloadJvmCoursier(
   launcherType: 'thin' | 'assembly',
 ): Promise<{ path: string; isDir: boolean }> {
-  const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}`
+  const baseUrl = `https://github.com/coursier/coursier/releases/download/${releaseTag}`
 
   if (launcherType === 'assembly') {
     const url = `${baseUrl}/coursier.jar`
@@ -136,7 +141,7 @@ async function downloadCoursier(launcher: string): Promise<{ path: string; isDir
       : process.platform === 'win32' && process.arch === 'arm64'
         ? 'jvm'
         : ''
-  const baseUrl = `${coursierBinariesGithubRepository}/releases/download/v${csVersion}/cs-${architecture}`
+  const baseUrl = `${coursierBinariesGithubRepository}/releases/download/${releaseTag}/cs-${architecture}`
   const launcherSuffix = effectiveLauncher ? `-${effectiveLauncher}` : ''
   const isWindowsJvmPackagedLauncher =
     process.platform === 'win32' && process.arch === 'arm64' && effectiveLauncher === 'jvm'
