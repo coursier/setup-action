@@ -61,6 +61,7 @@ jobs:
       uses: ./
       with:
         jvm: ${{ matrix.jvm }}
+        version: ${{ runner.os == 'Windows' && runner.arch == 'ARM64' && 'nightly' || '' }}
         # Windows ARM64 has no native sbtn launcher yet
         apps: ${{ runner.os == 'Windows' && runner.arch == 'ARM64' && 'sbt ammonite bloop' || 'sbt sbtn ammonite bloop' }}
 
