@@ -23177,7 +23177,9 @@ function _getGlobal(key, defaultValue) {
 var import_compare_versions = __toESM(require_umd());
 var defaultVersion = "2.1.25-M26";
 var csVersion = getInput("version") || defaultVersion;
-var useVirtusLabRepo = process.arch === "arm64" && (process.platform == "darwin" && (0, import_compare_versions.compareVersions)(csVersion.replace("-M", "."), "2.1.16") < 0 || process.platform == "linux" && (0, import_compare_versions.compareVersions)(csVersion.replace("-M", "."), "2.1.25.3") < 0);
+var isNightly = csVersion === "nightly";
+var releaseTag = isNightly ? "nightly" : `v${csVersion}`;
+var useVirtusLabRepo = !isNightly && process.arch === "arm64" && (process.platform == "darwin" && (0, import_compare_versions.compareVersions)(csVersion.replace("-M", "."), "2.1.16") < 0 || process.platform == "linux" && (0, import_compare_versions.compareVersions)(csVersion.replace("-M", "."), "2.1.25.3") < 0);
 var coursierBinariesGithubRepository = useVirtusLabRepo ? "https://github.com/VirtusLab/coursier-m1/" : "https://github.com/coursier/coursier/";
 var resolvedLauncher;
 var warnedAboutUseContainerImage = false;
@@ -23210,7 +23212,7 @@ function launcherInput(name) {
   return value;
 }
 async function downloadJvmCoursier(launcherType) {
-  const baseUrl = `https://github.com/coursier/coursier/releases/download/v${csVersion}`;
+  const baseUrl = `https://github.com/coursier/coursier/releases/download/${releaseTag}`;
   if (launcherType === "assembly") {
     const url2 = `${baseUrl}/coursier.jar`;
     console.log(`Downloading ${url2}`);
@@ -23266,7 +23268,7 @@ async function installJvmCoursier(launcherType) {
 }
 async function downloadCoursier(launcher) {
   const architecture = getCoursierArchitecture(process.arch);
-  const baseUrl = `${coursierBinariesGithubRepository}/releases/download/v${csVersion}/cs-${architecture}`;
+  const baseUrl = `${coursierBinariesGithubRepository}/releases/download/${releaseTag}/cs-${architecture}`;
   const launcherSuffix = launcher ? `-${launcher}` : "";
   let csBinary = "";
   switch (process.platform) {
