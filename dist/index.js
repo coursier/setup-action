@@ -23274,7 +23274,7 @@ function getCoursierArchitecture(arch3) {
     throw new Error(`Coursier does not have support for the ${arch3} architecture`);
   }
 }
-async function execOutput(cmd, ...args) {
+async function execOutput(cmd, args, env) {
   let output = "";
   const options = {
     listeners: {
@@ -23283,6 +23283,9 @@ async function execOutput(cmd, ...args) {
       }
     }
   };
+  if (env) {
+    options.env = env;
+  }
   await exec(cmd, args.filter(Boolean), options);
   return output.trim();
 }
@@ -23333,25 +23336,28 @@ async function installJvmCoursier(launcherType) {
   const previous = find(toolName, csVersion);
   if (previous) {
     addPath(previous);
-    return;
+    return previous;
   }
   const { path: binaryPath, isDir } = await downloadJvmCoursier(launcherType);
   if (!isDir) {
     const csCached = await cacheFile(binaryPath, "cs", toolName, csVersion);
     addPath(csCached);
-    return;
+    return csCached;
   }
   try {
     const csCached = await cacheDir(binaryPath, toolName, csVersion);
     addPath(csCached);
+    return csCached;
   } finally {
     fs4.rmSync(binaryPath, { recursive: true, force: true });
   }
 }
 async function downloadCoursier(launcher) {
   const architecture = getCoursierArchitecture(process.arch);
+  const effectiveLauncher = launcher !== "" ? launcher : process.platform === "win32" && process.arch === "arm64" ? "jvm" : "";
   const baseUrl = `${coursierBinariesGithubRepository}/releases/download/${releaseTag}/cs-${architecture}`;
-  const launcherSuffix = launcher ? `-${launcher}` : "";
+  const launcherSuffix = effectiveLauncher ? `-${effectiveLauncher}` : "";
+  const isWindowsJvmPackagedLauncher = process.platform === "win32" && process.arch === "arm64" && effectiveLauncher === "jvm";
   let csBinary = "";
   switch (process.platform) {
     case "linux": {
@@ -23391,11 +23397,15 @@ async function downloadCoursier(launcher) {
   }
   if (csBinary.endsWith(".zip")) {
     const destDir = csBinary.slice(0, csBinary.length - ".zip".length);
+    if (isWindowsJvmPackagedLauncher) {
+      await exec("unzip", [csBinary, "-d", destDir]);
+      return { path: destDir, isDir: true };
+    }
     await exec("unzip", ["-j", csBinary, `cs-${architecture}-pc-win32.exe`, "-d", destDir]);
     csBinary = `${destDir}\\cs-${architecture}-pc-win32.exe`;
   }
   await exec("chmod", ["+x", csBinary]);
-  return csBinary;
+  return { path: csBinary, isDir: false };
 }
 async function cs(...args) {
   const requiredLauncher = launcherInput("launcher");
@@ -23416,8 +23426,10 @@ async function cs(...args) {
     warning("useContainerImage is deprecated; use launcher: container instead");
     warnedAboutUseContainerImage = true;
   }
-  if (jvmLaunchers.includes(normalizedLauncher)) {
-    await installJvmCoursier(normalizedLauncher === "assembly" ? "assembly" : "thin");
+  const jvmLauncherType = jvmLaunchers.includes(normalizedLauncher) ? normalizedLauncher === "assembly" ? "assembly" : "thin" : void 0;
+  let jvmLauncherPath;
+  if (jvmLauncherType) {
+    jvmLauncherPath = await installJvmCoursier(jvmLauncherType);
   } else {
     const configuredLauncher = requiredLauncher || preferredLauncher || (useContainerImage ? "container" : "");
     const requestedLauncher = resolvedLauncher ?? configuredLauncher;
@@ -23428,30 +23440,31 @@ async function cs(...args) {
       addPath(previous);
     } else {
       let downloadedLauncher = requestedLauncher;
-      let csBinary;
+      let downloaded;
       try {
-        csBinary = await downloadCoursier(requestedLauncher);
+        downloaded = await downloadCoursier(requestedLauncher);
       } catch (error2) {
         if (preferredLauncher && resolvedLauncher === void 0 && error2 instanceof HTTPError && error2.httpStatusCode !== void 0 && error2.httpStatusCode >= 400 && error2.httpStatusCode < 500) {
           warning(
             `Preferred Coursier launcher "${preferredLauncher}" is not available (HTTP ${error2.httpStatusCode}); falling back to the default launcher`
           );
           downloadedLauncher = "";
-          csBinary = await downloadCoursier("");
+          downloaded = await downloadCoursier("");
         } else {
           throw error2;
         }
       }
       const binaryName = process.platform === "win32" ? "cs.exe" : "cs";
       const downloadedToolName = downloadedLauncher ? `cs-launcher-${downloadedLauncher}` : "cs";
-      const csCached = await cacheFile(csBinary, binaryName, downloadedToolName, csVersion);
+      const csCached = downloaded.isDir ? await cacheDir(downloaded.path, downloadedToolName, csVersion) : await cacheFile(downloaded.path, binaryName, downloadedToolName, csVersion);
       resolvedLauncher = downloadedLauncher;
       addPath(csCached);
     }
   }
   const extraJvmArgsInput = getInput("extraJvmArgs");
+  let extraJvmArgs = [];
   if (extraJvmArgsInput) {
-    const extraArgs = extraJvmArgsInput.trim().split(/\s+/).map((raw) => {
+    extraJvmArgs = extraJvmArgsInput.trim().split(/\s+/).map((raw) => {
       const arg = raw.startsWith("-J") ? raw : `-J${raw}`;
       if (!/^-J-D[a-zA-Z][\w]*(\.[a-zA-Z][\w]*)*(=.*)?$/.test(arg)) {
         throw new Error(
@@ -23460,7 +23473,6 @@ async function cs(...args) {
       }
       return arg;
     });
-    args = [...extraArgs, ...args];
   }
   const disableDefaultReposInput = getInput("disableDefaultRepos");
   if (disableDefaultReposInput.toLowerCase() === "true") {
@@ -23473,7 +23485,23 @@ async function cs(...args) {
       args.push("-r", repo.trim());
     });
   }
-  return execOutput("cs", ...args);
+  if (process.platform === "win32" && jvmLauncherType && jvmLauncherPath) {
+    const jarName = jvmLauncherType === "assembly" ? "coursier.jar" : "coursier";
+    return execOutput("java", [
+      ...extraJvmArgs.map((arg) => arg.slice(2)),
+      "-jar",
+      path6.join(jvmLauncherPath, jarName),
+      ...args
+    ]);
+  }
+  const usesWindowsJvmPackagedLauncher = process.platform === "win32" && process.arch === "arm64" && !jvmLauncherType;
+  if (usesWindowsJvmPackagedLauncher && extraJvmArgs.length) {
+    const toolOptions = extraJvmArgs.map((arg) => arg.slice(2)).join(" ");
+    const env = { ...process.env };
+    env.JAVA_TOOL_OPTIONS = [process.env.JAVA_TOOL_OPTIONS, toolOptions].filter(Boolean).join(" ");
+    return execOutput("cs", args, env);
+  }
+  return execOutput("cs", [...extraJvmArgs, ...args]);
 }
 function writeMirrorsFile() {
   const mirrorsInput = getInput("mirrors");
