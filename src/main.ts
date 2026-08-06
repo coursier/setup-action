@@ -37,14 +37,21 @@ function getCoursierArchitecture(arch: string): string {
   }
 }
 
-async function execOutput(cmd: string, ...args: string[]): Promise<string> {
+async function execOutput(
+  cmd: string,
+  args: string[],
+  env?: { [key: string]: string },
+): Promise<string> {
   let output = ''
-  const options = {
+  const options: cli.ExecOptions = {
     listeners: {
       stdout: (data: Buffer) => {
         output += data.toString()
       },
     },
+  }
+  if (env) {
+    options.env = env
   }
   await cli.exec(cmd, args.filter(Boolean), options)
   return output.trim()
@@ -100,33 +107,44 @@ async function downloadJvmCoursier(
   return { path: tempDir, isDir: true }
 }
 
-async function installJvmCoursier(launcherType: 'thin' | 'assembly'): Promise<void> {
+async function installJvmCoursier(launcherType: 'thin' | 'assembly'): Promise<string> {
   const toolName = `cs-${launcherType}`
   const previous = tc.find(toolName, csVersion)
   if (previous) {
     core.addPath(previous)
-    return
+    return previous
   }
 
   const { path: binaryPath, isDir } = await downloadJvmCoursier(launcherType)
   if (!isDir) {
     const csCached = await tc.cacheFile(binaryPath, 'cs', toolName, csVersion)
     core.addPath(csCached)
-    return
+    return csCached
   }
 
   try {
     const csCached = await tc.cacheDir(binaryPath, toolName, csVersion)
     core.addPath(csCached)
+    return csCached
   } finally {
     fs.rmSync(binaryPath, { recursive: true, force: true })
   }
 }
 
-async function downloadCoursier(launcher: string): Promise<string> {
+async function downloadCoursier(launcher: string): Promise<{ path: string; isDir: boolean }> {
   const architecture = getCoursierArchitecture(process.arch)
+  // Windows ARM64 has no GraalVM native image; the default artifact is the jpackage JVM distribution
+  // (cs-aarch64-pc-win32-jvm.zip), which embeds a runtime under app/ and runtime/.
+  const effectiveLauncher =
+    launcher !== ''
+      ? launcher
+      : process.platform === 'win32' && process.arch === 'arm64'
+        ? 'jvm'
+        : ''
   const baseUrl = `${coursierBinariesGithubRepository}/releases/download/${releaseTag}/cs-${architecture}`
-  const launcherSuffix = launcher ? `-${launcher}` : ''
+  const launcherSuffix = effectiveLauncher ? `-${effectiveLauncher}` : ''
+  const isWindowsJvmPackagedLauncher =
+    process.platform === 'win32' && process.arch === 'arm64' && effectiveLauncher === 'jvm'
   let csBinary = ''
   switch (process.platform) {
     case 'linux': {
@@ -166,11 +184,16 @@ async function downloadCoursier(launcher: string): Promise<string> {
   }
   if (csBinary.endsWith('.zip')) {
     const destDir = csBinary.slice(0, csBinary.length - '.zip'.length)
+    if (isWindowsJvmPackagedLauncher) {
+      // jpackage layout: cs.exe plus app/ and runtime/ — keep the full tree.
+      await cli.exec('unzip', [csBinary, '-d', destDir])
+      return { path: destDir, isDir: true }
+    }
     await cli.exec('unzip', ['-j', csBinary, `cs-${architecture}-pc-win32.exe`, '-d', destDir])
     csBinary = `${destDir}\\cs-${architecture}-pc-win32.exe`
   }
   await cli.exec('chmod', ['+x', csBinary])
-  return csBinary
+  return { path: csBinary, isDir: false }
 }
 
 async function cs(...args: string[]): Promise<string> {
@@ -192,10 +215,17 @@ async function cs(...args: string[]): Promise<string> {
     core.warning('useContainerImage is deprecated; use launcher: container instead')
     warnedAboutUseContainerImage = true
   }
-  if (jvmLaunchers.includes(normalizedLauncher)) {
-    await installJvmCoursier(normalizedLauncher === 'assembly' ? 'assembly' : 'thin')
+  const jvmLauncherType: 'thin' | 'assembly' | undefined = jvmLaunchers.includes(normalizedLauncher)
+    ? normalizedLauncher === 'assembly'
+      ? 'assembly'
+      : 'thin'
+    : undefined
+  let jvmLauncherPath: string | undefined
+  if (jvmLauncherType) {
+    jvmLauncherPath = await installJvmCoursier(jvmLauncherType)
   } else {
     // Keep the old flag working, but let either of the new inputs take precedence.
+    // Empty launcher on Windows ARM64 downloads cs-aarch64-pc-win32-jvm.zip (see downloadCoursier).
     const configuredLauncher =
       requiredLauncher || preferredLauncher || (useContainerImage ? 'container' : '')
     const requestedLauncher = resolvedLauncher ?? configuredLauncher
@@ -207,9 +237,9 @@ async function cs(...args: string[]): Promise<string> {
       core.addPath(previous)
     } else {
       let downloadedLauncher = requestedLauncher
-      let csBinary: string
+      let downloaded: { path: string; isDir: boolean }
       try {
-        csBinary = await downloadCoursier(requestedLauncher)
+        downloaded = await downloadCoursier(requestedLauncher)
       } catch (error: unknown) {
         if (
           preferredLauncher &&
@@ -223,22 +253,25 @@ async function cs(...args: string[]): Promise<string> {
             `Preferred Coursier launcher "${preferredLauncher}" is not available (HTTP ${error.httpStatusCode}); falling back to the default launcher`,
           )
           downloadedLauncher = ''
-          csBinary = await downloadCoursier('')
+          downloaded = await downloadCoursier('')
         } else {
           throw error
         }
       }
       const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs'
       const downloadedToolName = downloadedLauncher ? `cs-launcher-${downloadedLauncher}` : 'cs'
-      const csCached = await tc.cacheFile(csBinary, binaryName, downloadedToolName, csVersion)
+      const csCached = downloaded.isDir
+        ? await tc.cacheDir(downloaded.path, downloadedToolName, csVersion)
+        : await tc.cacheFile(downloaded.path, binaryName, downloadedToolName, csVersion)
       resolvedLauncher = downloadedLauncher
       core.addPath(csCached)
     }
   }
 
   const extraJvmArgsInput = core.getInput('extraJvmArgs')
+  let extraJvmArgs: string[] = []
   if (extraJvmArgsInput) {
-    const extraArgs = extraJvmArgsInput
+    extraJvmArgs = extraJvmArgsInput
       .trim()
       .split(/\s+/)
       .map(raw => {
@@ -250,7 +283,6 @@ async function cs(...args: string[]): Promise<string> {
         }
         return arg
       })
-    args = [...extraArgs, ...args]
   }
 
   const disableDefaultReposInput = core.getInput('disableDefaultRepos')
@@ -269,7 +301,29 @@ async function cs(...args: string[]): Promise<string> {
     })
   }
 
-  return execOutput('cs', ...args)
+  if (process.platform === 'win32' && jvmLauncherType && jvmLauncherPath) {
+    const jarName = jvmLauncherType === 'assembly' ? 'coursier.jar' : 'coursier'
+    return execOutput('java', [
+      ...extraJvmArgs.map(arg => arg.slice(2)),
+      '-jar',
+      path.join(jvmLauncherPath, jarName),
+      ...args,
+    ])
+  }
+
+  // The Windows ARM64 jpackage launcher (cs-aarch64-pc-win32-jvm.zip) does not support
+  // GraalVM-style -J flags; they are treated as application args and break CLI parsing.
+  // Pass extra JVM properties via JAVA_TOOL_OPTIONS instead.
+  const usesWindowsJvmPackagedLauncher =
+    process.platform === 'win32' && process.arch === 'arm64' && !jvmLauncherType
+  if (usesWindowsJvmPackagedLauncher && extraJvmArgs.length) {
+    const toolOptions = extraJvmArgs.map(arg => arg.slice(2)).join(' ')
+    const env: { [key: string]: string } = { ...process.env } as { [key: string]: string }
+    env.JAVA_TOOL_OPTIONS = [process.env.JAVA_TOOL_OPTIONS, toolOptions].filter(Boolean).join(' ')
+    return execOutput('cs', args, env)
+  }
+
+  return execOutput('cs', [...extraJvmArgs, ...args])
 }
 
 function writeMirrorsFile(): void {

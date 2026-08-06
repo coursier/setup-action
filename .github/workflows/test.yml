@@ -18,6 +18,8 @@ jobs:
             jvm: '21'
           - os: "ubuntu-24.04-arm"
             jvm: '21'
+          - os: "windows-11-arm"
+            jvm: '21'
     steps:
     - uses: actions/checkout@v7
 
@@ -59,7 +61,9 @@ jobs:
       uses: ./
       with:
         jvm: ${{ matrix.jvm }}
-        apps: sbt sbtn ammonite bloop
+        version: ${{ runner.os == 'Windows' && runner.arch == 'ARM64' && 'nightly' || '' }}
+        # Windows ARM64 has no native sbtn launcher yet
+        apps: ${{ runner.os == 'Windows' && runner.arch == 'ARM64' && 'sbt ammonite bloop' || 'sbt sbtn ammonite bloop' }}
 
     # - uses: coursier/cache-action@v5
     - run: echo cs-version=${{ steps.cs-setup.outputs.cs-version }}
@@ -71,9 +75,11 @@ jobs:
     - run: cs java -version
 
     # test installed apps
+    - run: sbt "show name"
+      if: runner.os == 'Windows' && runner.arch == 'ARM64'
     - run: sbtn.bat show name </dev/null
       shell: bash
-      if: runner.os == 'Windows'
+      if: runner.os == 'Windows' && runner.arch != 'ARM64'
     - run: sbtn show name
       if: runner.os != 'Windows'
     - run: amm --help
@@ -96,6 +102,10 @@ jobs:
           - os: "ubuntu-24.04-arm"
             launcher: 'thin'
           - os: "ubuntu-24.04-arm"
+            launcher: 'assembly'
+          - os: "windows-11-arm"
+            launcher: 'thin'
+          - os: "windows-11-arm"
             launcher: 'assembly'
     steps:
     - uses: actions/checkout@v7
