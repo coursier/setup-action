@@ -2,6 +2,11 @@ name: Update Coursier
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: Coursier version to update to (defaults to the latest coursier release)
+        required: false
+        type: string
   schedule:
     - cron: '17 3 * * *'
       timezone: Europe/Paris
@@ -16,22 +21,27 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Get latest Coursier release
+      - name: Get Coursier version
         id: coursier
         env:
           GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.version }}
         shell: bash
         run: |
-          version=$(
-            gh api 'repos/coursier/coursier/releases?per_page=100' \
-              --jq 'map(select(.draft | not))[0].tag_name'
-          )
+          version="$INPUT_VERSION"
+          if [[ -z "$version" ]]; then
+            # only keep the "v*" tags, so that we ignore the rolling "nightly" release
+            version=$(
+              gh api 'repos/coursier/coursier/releases?per_page=100' \
+                --jq 'map(select((.draft | not) and (.tag_name | startswith("v"))))[0].tag_name'
+            )
+          fi
           version=${version#v}
           if [[ ! "$version" =~ ^[0-9]+(\.[0-9]+)+([.-][0-9A-Za-z.-]+)?$ ]]; then
             echo "::error::Unexpected Coursier release version: $version"
             exit 1
           fi
-          echo "Latest Coursier version: $version"
+          echo "Coursier version: $version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Update default Coursier version
