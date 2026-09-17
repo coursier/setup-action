@@ -9,7 +9,7 @@ import * as tc from '@actions/tool-cache'
 // but coursier is not published on npm
 import { compareVersions } from 'compare-versions'
 
-const defaultVersion = '2.1.25-M26'
+const defaultVersion = '2.1.25'
 
 // compare-versions doesn't know about Coursier milestone versions, like "2.1.25-M3",
 // which come *before* the corresponding release ("2.1.25"). Split those in two, so that
