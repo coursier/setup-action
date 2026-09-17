@@ -23257,11 +23257,21 @@ function _getGlobal(key, defaultValue) {
 
 // src/main.ts
 var import_compare_versions = __toESM(require_umd());
-var defaultVersion = "2.1.25-M26";
+var defaultVersion = "2.1.25";
+function splitMilestone(version) {
+  const match = /^(.+)-M(\d+)$/.exec(version);
+  return match ? [match[1], parseInt(match[2], 10)] : [version, Number.MAX_SAFE_INTEGER];
+}
+function compareCoursierVersions(a, b) {
+  const [aVersion, aMilestone] = splitMilestone(a);
+  const [bVersion, bMilestone] = splitMilestone(b);
+  const versionComparison = (0, import_compare_versions.compareVersions)(aVersion, bVersion);
+  return versionComparison === 0 ? Math.sign(aMilestone - bMilestone) : versionComparison;
+}
 var csVersion = getInput("version") || defaultVersion;
 var isNightly = csVersion === "nightly";
 var releaseTag = isNightly ? "nightly" : `v${csVersion}`;
-var useVirtusLabRepo = !isNightly && process.arch === "arm64" && (process.platform == "darwin" && (0, import_compare_versions.compareVersions)(csVersion.replace("-M", "."), "2.1.16") < 0 || process.platform == "linux" && (0, import_compare_versions.compareVersions)(csVersion.replace("-M", "."), "2.1.25.3") < 0);
+var useVirtusLabRepo = !isNightly && process.arch === "arm64" && (process.platform == "darwin" && compareCoursierVersions(csVersion, "2.1.16") < 0 || process.platform == "linux" && compareCoursierVersions(csVersion, "2.1.25-M3") < 0);
 var coursierBinariesGithubRepository = useVirtusLabRepo ? "https://github.com/VirtusLab/coursier-m1/" : "https://github.com/coursier/coursier/";
 var resolvedLauncher;
 var warnedAboutUseContainerImage = false;
