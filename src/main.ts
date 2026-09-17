@@ -9,7 +9,7 @@ import * as tc from '@actions/tool-cache'
 // but coursier is not published on npm
 import { compareVersions } from 'compare-versions'
 
-const defaultVersion = '2.1.25-M26'
+const defaultVersion = '2.1.25'
 
 const csVersion = core.getInput('version') || defaultVersion
 // Nightly builds are published under the fixed tag "nightly" (no "v" prefix).
