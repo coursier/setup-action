@@ -11,6 +11,21 @@ import { compareVersions } from 'compare-versions'
 
 const defaultVersion = '2.1.25'
 
+// compare-versions doesn't know about Coursier milestone versions, like "2.1.25-M3",
+// which come *before* the corresponding release ("2.1.25"). Split those in two, so that
+// we can compare the release parts first, and the milestone numbers only as a tie-breaker.
+function splitMilestone(version: string): [string, number] {
+  const match = /^(.+)-M(\d+)$/.exec(version)
+  return match ? [match[1], parseInt(match[2], 10)] : [version, Number.MAX_SAFE_INTEGER]
+}
+
+function compareCoursierVersions(a: string, b: string): number {
+  const [aVersion, aMilestone] = splitMilestone(a)
+  const [bVersion, bMilestone] = splitMilestone(b)
+  const versionComparison = compareVersions(aVersion, bVersion)
+  return versionComparison === 0 ? Math.sign(aMilestone - bMilestone) : versionComparison
+}
+
 const csVersion = core.getInput('version') || defaultVersion
 // Nightly builds are published under the fixed tag "nightly" (no "v" prefix).
 // See https://github.com/coursier/coursier/releases/tag/nightly
@@ -19,8 +34,8 @@ const releaseTag = isNightly ? 'nightly' : `v${csVersion}`
 const useVirtusLabRepo =
   !isNightly &&
   process.arch === 'arm64' &&
-  ((process.platform == 'darwin' && compareVersions(csVersion.replace('-M', '.'), '2.1.16') < 0) ||
-    (process.platform == 'linux' && compareVersions(csVersion.replace('-M', '.'), '2.1.25.3') < 0))
+  ((process.platform == 'darwin' && compareCoursierVersions(csVersion, '2.1.16') < 0) ||
+    (process.platform == 'linux' && compareCoursierVersions(csVersion, '2.1.25-M3') < 0))
 const coursierBinariesGithubRepository = useVirtusLabRepo
   ? 'https://github.com/VirtusLab/coursier-m1/'
   : 'https://github.com/coursier/coursier/'
