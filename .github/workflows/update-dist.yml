@@ -4,6 +4,10 @@ on:
     branches:
     - main
 
+concurrency:
+  group: update-dist-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   update-dist:
     runs-on: ubuntu-latest
