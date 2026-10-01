@@ -23488,7 +23488,7 @@ function _getGlobal(key, defaultValue) {
 
 // src/main.ts
 var import_compare_versions = __toESM(require_umd());
-var defaultVersion = "2.1.25";
+var defaultVersion = "2.1.26";
 function splitMilestone(version) {
   const match = /^(.+)-M(\d+)$/.exec(version);
   return match ? [match[1], parseInt(match[2], 10)] : [version, Number.MAX_SAFE_INTEGER];
