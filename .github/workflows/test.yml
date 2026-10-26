@@ -472,3 +472,55 @@ jobs:
       run: |
         echo "$JAVA_HOME"
         java -version 2>&1 | grep -E 'version "21[."]'
+
+  test-custom-repositories:
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24
+        cache: 'npm'
+
+    - name: Build
+      shell: bash
+      run: |
+        npm ci
+        npm run package
+
+    # invalid boolean values must make the action fail rather than being
+    # silently treated as false
+    - name: Test invalid disableDefaultRepos value
+      uses: ./
+      with:
+        apps: ''
+        disableDefaultRepos: 'yes'
+      continue-on-error: true
+      id: invalid-disable-default-repos
+    - name: Verify invalid disableDefaultRepos value caused failure
+      shell: bash
+      run: |
+        if [ "${{ steps.invalid-disable-default-repos.outcome }}" = "failure" ]; then
+          echo "invalid disableDefaultRepos value correctly rejected"
+        else
+          echo "::error::disableDefaultRepos: 'yes' should have failed but didn't"
+          exit 1
+        fi
+
+    - id: cs-setup-custom-repos
+      uses: ./
+      with:
+        jvm: '17'
+        apps: scalafmt
+        disableDefaultRepos: true
+        customRepositories: https://repo1.maven.org/maven2|https://central.sonatype.com/repository/maven-snapshots
+
+    - run: java -version
+    - run: scalafmt --version
