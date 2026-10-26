@@ -37,7 +37,9 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
   - Whether or not to pass the --no-default flag to coursier
 
 - `mirrors` (optional): ''
-  - Newline-separated list of `from=to` entries written to `~/.config/coursier/mirror.properties` before any `cs` invocation.
+  - Newline-separated list of `from=to` entries written to a mirror file owned by the action (under `$RUNNER_TEMP`) before any `cs` invocation.
+  - The path of that file is exported as `COURSIER_EXTRA_MIRRORS`, so that coursier-based tools (sbt, mill, scala-cli…) in later steps use these mirrors too.
+  - The user's own coursier mirror config (`mirror.properties` in the coursier config directory, or `COURSIER_MIRRORS`) is left untouched and still applies. If `COURSIER_EXTRA_MIRRORS` is already set, the mirrors of that file are copied into the action's file, as coursier only accepts a single file there.
   - The `from` side may be a comma-separated list of source URLs.
   - Unlike `customRepositories` / `disableDefaultRepos`, mirrors are applied at the resolver level to every repository coursier sees — including ones declared inside app descriptors that `customRepositories` cannot override.
   - See [coursier mirrors](https://get-coursier.io/docs/other-mirrors).

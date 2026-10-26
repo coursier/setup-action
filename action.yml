@@ -30,7 +30,7 @@ inputs:
     required: false
     default: 'false'
   mirrors:
-    description: 'Newline-separated list of "from=to" mirror entries written to ~/.config/coursier/mirror.properties before any cs invocation. The "from" side may be a comma-separated list of source URLs. Unlike customRepositories / disableDefaultRepos, mirrors are applied at the resolver level to every repository coursier sees — including ones declared inside app descriptors that customRepositories cannot override. See https://get-coursier.io/docs/other-mirrors'
+    description: 'Newline-separated list of "from=to" mirror entries written to a mirror file owned by the action (under $RUNNER_TEMP) before any cs invocation. Its path is exported as COURSIER_EXTRA_MIRRORS, so that coursier-based tools (sbt, mill, scala-cli…) in later steps use these mirrors too. The user's own coursier mirror config is left untouched, and if COURSIER_EXTRA_MIRRORS is already set, the mirrors of that file are kept. The "from" side may be a comma-separated list of source URLs. Unlike customRepositories / disableDefaultRepos, mirrors are applied at the resolver level to every repository coursier sees — including ones declared inside app descriptors that customRepositories cannot override. See https://get-coursier.io/docs/other-mirrors'
     required: false
     default: ''
   extraJvmArgs:
