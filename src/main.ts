@@ -230,9 +230,11 @@ async function downloadCoursier(launcher: string): Promise<{ path: string; isDir
       break
     }
     default:
-      core.setFailed(`Unknown process.platform: ${process.platform}`)
+      throw new Error(
+        `Unsupported platform: ${process.platform} (supported platforms: linux, darwin, win32)`,
+      )
   }
-  if (!csBinary) core.setFailed(`Couldn't download Coursier`)
+  if (!csBinary) throw new Error(`Couldn't download Coursier`)
   if (process.platform !== 'win32') fs.chmodSync(csBinary, 0o755)
   return { path: csBinary, isDir: false }
 }
