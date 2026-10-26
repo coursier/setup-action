@@ -52,6 +52,10 @@ inputs:
 outputs:
   cs-version:
     description: 'Version of the installed Coursier, as reported by "cs version" (e.g. the actual nightly version when version is "nightly")'
+  java-home:
+    description: 'JAVA_HOME in effect after the action: the JVM installed by Coursier, or the pre-existing JAVA_HOME when no jvm input was given and JAVA_HOME was already set'
+  cs-bin-dir:
+    description: 'Directory the apps were installed to (also exported as COURSIER_BIN_DIR). Only set when apps are installed; not set (so it evaluates to an empty string) when apps is empty'
 runs:
   using: 'node24'
   main: 'dist/index.js'
