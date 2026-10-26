@@ -133,6 +133,12 @@ jobs:
         apps: ''
 
     - run: echo cs-version=${{ steps.cs-setup-jvm-launcher.outputs.cs-version }}
+    - name: Verify default version output
+      shell: bash
+      run: |
+        expected="$(sed -n "s/^const defaultVersion = '\(.*\)'$/\1/p" src/main.ts)"
+        test -n "$expected"
+        test "${{ steps.cs-setup-jvm-launcher.outputs.cs-version }}" = "$expected"
     - run: cs --help
     - run: java -version
 
@@ -166,5 +172,7 @@ jobs:
     - name: Verify nightly version output
       shell: bash
       run: |
-        test "${{ steps.cs-setup-nightly.outputs.cs-version }}" = "nightly"
+        version="${{ steps.cs-setup-nightly.outputs.cs-version }}"
+        test "$version" != "nightly"
+        [[ "$version" =~ ^[0-9]+\.[0-9]+ ]]
     - run: cs --help

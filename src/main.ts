@@ -381,7 +381,21 @@ async function run(): Promise<void> {
 
     await core.group('Install Coursier', async () => {
       await cs('--help')
-      core.setOutput('cs-version', csVersion)
+      // cs is on the PATH now. Call it directly rather than via cs(), as `cs version`
+      // rejects the --no-default / -r options that cs() may append.
+      let installedVersion = ''
+      try {
+        installedVersion = await execOutput('cs', ['version'])
+      } catch (error: unknown) {
+        core.debug(`cs version failed: ${error instanceof Error ? error.message : String(error)}`)
+      }
+      if (!/^\S+$/.test(installedVersion)) {
+        core.warning(
+          `Could not get the installed Coursier version from "cs version", reporting ${csVersion} instead`,
+        )
+        installedVersion = csVersion
+      }
+      core.setOutput('cs-version', installedVersion)
     })
 
     await core.group('Install JVM', async () => {
