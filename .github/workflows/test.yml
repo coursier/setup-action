@@ -35,23 +35,29 @@ jobs:
         test "$OSTYPE" != "msys" || npm run format
         npm run all
 
-    # test extraJvmArgs — must run before the main setup so that apps and
-    # JVM are not yet cached, forcing cs to fetch over the network and hit
-    # the bogus proxy
+    # test extraJvmArgs — point coursier's cache (the coursier.cache Java
+    # property) to a fresh directory, then check that cs populated it. Fetching
+    # the JVM index always goes through that cache, so this succeeds only if the
+    # property actually reached cs, whatever the launcher (native -J flags,
+    # java -jar on Windows JVM launchers, or JAVA_TOOL_OPTIONS on Windows ARM64).
+    # This replaces an older negative test (bogus HTTPS proxy, expect failure),
+    # which also passed when the action failed for any unrelated reason.
+    # The path is relative to the workspace, to avoid Windows path quirks.
     - name: Test extraJvmArgs passes args to cs
       uses: ./
       with:
         jvm: ${{ matrix.jvm }}
-        extraJvmArgs: -Dhttps.proxyHost=invalid.proxy.local -Dhttps.proxyPort=9999
-      continue-on-error: true
-      id: extra-jvm-args-test
-    - name: Verify extraJvmArgs caused failure
+        apps: ''
+        extraJvmArgs: -Dcoursier.cache=.ci-tmp/extra-jvm-args-cache
+    - name: Verify extraJvmArgs changed the coursier cache location
       shell: bash
       run: |
-        if [ "${{ steps.extra-jvm-args-test.outcome }}" = "failure" ]; then
-          echo "extraJvmArgs correctly passed to cs (proxy caused expected failure)"
+        index=.ci-tmp/extra-jvm-args-cache/https/github.com/coursier/jvm-index/raw/master/index.json
+        if [ -f "$index" ]; then
+          echo "extraJvmArgs correctly passed to cs (JVM index cached under the custom cache)"
         else
-          echo "::error::extraJvmArgs test should have failed with bogus proxy but didn't"
+          echo "::error::extraJvmArgs test: $index not found"
+          find .ci-tmp || true
           exit 1
         fi
 
@@ -176,3 +182,196 @@ jobs:
         test "$version" != "nightly"
         [[ "$version" =~ ^[0-9]+\.[0-9]+ ]]
     - run: cs --help
+
+  # Native launcher flavors, with launcher (required) or preferredLauncher.
+  # Only Linux has flavored native launchers (see the assets of
+  # https://github.com/coursier/coursier/releases/tag/v2.1.26): container,
+  # static and compat on x86_64, container and static on aarch64.
+  test-native-launcher-flavors:
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            input: launcher
+            flavor: container
+          - os: ubuntu-latest
+            input: launcher
+            flavor: static
+          - os: ubuntu-latest
+            input: launcher
+            flavor: compat
+          - os: ubuntu-24.04-arm
+            input: launcher
+            flavor: container
+          - os: ubuntu-latest
+            input: preferredLauncher
+            flavor: static
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24
+        cache: 'npm'
+
+    - name: Build
+      shell: bash
+      run: |
+        npm ci
+        npm run package
+
+    - uses: ./
+      with:
+        launcher: ${{ matrix.input == 'launcher' && matrix.flavor || '' }}
+        preferredLauncher: ${{ matrix.input == 'preferredLauncher' && matrix.flavor || '' }}
+        apps: ''
+
+    - run: cs --help
+    - name: Verify the ${{ matrix.flavor }} launcher is the one on PATH
+      shell: bash
+      run: |
+        command -v cs
+        command -v cs | grep -F '/cs-launcher-${{ matrix.flavor }}/'
+
+  # Non-existent launcher flavors: preferredLauncher must fall back to the
+  # default launcher (with a warning), launcher must fail. macOS and Windows
+  # build different download URLs, and have no flavored launchers at all, so
+  # run there too.
+  test-missing-launcher-flavor:
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15, windows-latest]
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24
+        cache: 'npm'
+
+    - name: Build
+      shell: bash
+      run: |
+        npm ci
+        npm run package
+
+    - uses: ./
+      with:
+        preferredLauncher: doesnotexist
+        apps: ''
+    - run: cs --help
+    - name: Verify the default launcher is the one on PATH
+      shell: bash
+      run: |
+        command -v cs
+        command -v cs | grep -E '/cs/[^/]+/[^/]+/cs$'
+
+    - uses: ./
+      with:
+        launcher: doesnotexist
+        apps: ''
+      continue-on-error: true
+      id: missing-launcher
+    - name: Verify missing launcher caused failure
+      shell: bash
+      run: |
+        if [ "${{ steps.missing-launcher.outcome }}" = "failure" ]; then
+          echo "launcher: doesnotexist correctly failed"
+        else
+          echo "::error::launcher: doesnotexist should have failed but didn't"
+          exit 1
+        fi
+
+    # A `uses:` step doesn't expose its log to later steps, so run the bundled
+    # action directly to check the fallback warning and the failure reason.
+    # GITHUB_PATH / GITHUB_ENV / GITHUB_OUTPUT point to scratch files, so that
+    # these runs don't affect later steps.
+    - name: Verify fallback warning and failure reason
+      shell: bash
+      env:
+        INPUT_USECONTAINERIMAGE: 'false'
+      run: |
+        run_action() {
+          local name="$1"; shift
+          local dir=".ci-tmp/$name"
+          mkdir -p "$dir"
+          touch "$dir/path" "$dir/env" "$dir/output"
+          env GITHUB_PATH="$dir/path" GITHUB_ENV="$dir/env" GITHUB_OUTPUT="$dir/output" "$@" \
+            node dist/index.js > "$dir/log" 2>&1
+        }
+        check_log() {
+          # -q: echoing the matched ::warning:: / ::error:: lines would add annotations
+          if ! grep -qF "$2" ".ci-tmp/$1/log"; then
+            cat ".ci-tmp/$1/log"
+            echo "::error::'$2' not found in the output of the $1 run"
+            exit 1
+          fi
+          echo "Found expected output in the $1 run"
+        }
+
+        run_action preferred-fallback INPUT_PREFERREDLAUNCHER=doesnotexist || { cat .ci-tmp/preferred-fallback/log; exit 1; }
+        check_log preferred-fallback '::warning::Preferred Coursier launcher "doesnotexist" is not available (HTTP 404); falling back to the default launcher'
+
+        if run_action missing-launcher INPUT_LAUNCHER=doesnotexist; then
+          cat .ci-tmp/missing-launcher/log
+          echo "::error::launcher: doesnotexist should have failed but didn't"
+          exit 1
+        fi
+        check_log missing-launcher '::error::Unexpected HTTP response: 404'
+
+  test-jvm-index:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24
+        cache: 'npm'
+
+    - name: Build
+      shell: bash
+      run: |
+        npm ci
+        npm run package
+
+    # run first, so that nothing is cached yet (the index is needed anyway,
+    # even when the JVM is already in the cache)
+    - uses: ./
+      with:
+        jvm: '21'
+        jvm-index: https://github.com/coursier/jvm-index/raw/master/does-not-exist.json
+        apps: ''
+      continue-on-error: true
+      id: bogus-jvm-index
+    - name: Verify bogus jvm-index caused failure
+      shell: bash
+      run: |
+        if [ "${{ steps.bogus-jvm-index.outcome }}" = "failure" ]; then
+          echo "bogus jvm-index correctly failed"
+        else
+          echo "::error::bogus jvm-index should have failed but didn't"
+          exit 1
+        fi
+
+    # the default JVM index of coursier, passed explicitly
+    - uses: ./
+      with:
+        jvm: '21'
+        jvm-index: https://github.com/coursier/jvm-index/raw/master/index.json
+        apps: ''
+    - name: Verify JVM 21 is installed
+      shell: bash
+      run: |
+        echo "$JAVA_HOME"
+        java -version 2>&1 | grep -E 'version "21[."]'
