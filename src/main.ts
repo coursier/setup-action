@@ -361,17 +361,40 @@ function writeMirrorsFile(): void {
     if (!from || !to) {
       throw new Error(`Invalid mirror entry (empty side): ${entry}`)
     }
-    const prefix = `mirror${idx}`
+    const prefix = `setupActionMirror${idx}`
     lines.push(`${prefix}.from=${from}`)
     lines.push(`${prefix}.to=${to}`)
   })
 
-  const configDir = path.join(os.homedir(), '.config', 'coursier')
-  fs.mkdirSync(configDir, { recursive: true })
-  const mirrorFile = path.join(configDir, 'mirror.properties')
-  fs.writeFileSync(mirrorFile, lines.join('\n') + '\n')
+  // Write to a file we own rather than to the user's coursier config directory (whose
+  // location is platform-specific, and which may already have a mirror.properties),
+  // and point coursier at it via COURSIER_EXTRA_MIRRORS, read on top of the default files.
+  const mirrorDir = path.join(process.env.RUNNER_TEMP || os.tmpdir(), 'coursier-setup-action')
+  fs.mkdirSync(mirrorDir, { recursive: true })
+  const mirrorFile = path.join(mirrorDir, 'mirror.properties')
+
+  // COURSIER_EXTRA_MIRRORS only accepts a single file, so if the user already set it,
+  // keep their mirrors by copying their file's content into ours.
+  const existing = process.env.COURSIER_EXTRA_MIRRORS
+  let content = ''
+  if (existing && path.resolve(existing) !== mirrorFile) {
+    try {
+      content = fs.readFileSync(existing, 'utf8').replace(/\n?$/, '\n')
+      core.info(`Including mirrors from existing COURSIER_EXTRA_MIRRORS file ${existing}`)
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error)
+      core.warning(
+        `Could not read existing COURSIER_EXTRA_MIRRORS file ${existing}, its mirrors will be ignored: ${msg}`,
+      )
+    }
+  }
+  content += lines.join('\n') + '\n'
+
+  fs.writeFileSync(mirrorFile, content)
+  // also updates process.env, so that our own cs invocations see it
+  core.exportVariable('COURSIER_EXTRA_MIRRORS', mirrorFile)
   console.log(
-    `Wrote ${entries.length} mirror entr${entries.length === 1 ? 'y' : 'ies'} to ${mirrorFile}`,
+    `Wrote ${entries.length} mirror entr${entries.length === 1 ? 'y' : 'ies'} to ${mirrorFile} (exported as COURSIER_EXTRA_MIRRORS)`,
   )
 }
 

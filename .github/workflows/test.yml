@@ -168,3 +168,66 @@ jobs:
       run: |
         test "${{ steps.cs-setup-nightly.outputs.cs-version }}" = "nightly"
     - run: cs --help
+
+  test-mirrors:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15, windows-latest]
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24
+        cache: 'npm'
+
+    - name: Build
+      shell: bash
+      run: |
+        npm ci
+        npm run package
+
+    # Runners already have a JVM (JAVA_HOME), so only the app install hits Maven Central
+    - name: Test mirrors to a bogus host
+      uses: ./
+      with:
+        apps: scalafmt
+        mirrors: |
+          https://repo1.maven.org/maven2=https://bogus-mirror.invalid/maven2
+      continue-on-error: true
+      id: bogus-mirror-test
+    - name: Verify bogus mirror caused failure
+      shell: bash
+      run: |
+        if [ "${{ steps.bogus-mirror-test.outcome }}" != "failure" ]; then
+          echo "::error::installing apps should have failed with a bogus mirror but didn't"
+          exit 1
+        fi
+        # COURSIER_EXTRA_MIRRORS is exported to later steps: check the mirror is what breaks downloads
+        echo "COURSIER_EXTRA_MIRRORS=$COURSIER_EXTRA_MIRRORS"
+        if COURSIER_CACHE="$RUNNER_TEMP/cs-cache-bogus" cs fetch org.scala-lang:scala-library:2.13.14 > fetch.log 2>&1; then
+          cat fetch.log
+          echo "::error::cs fetch should have failed with a bogus mirror but didn't"
+          exit 1
+        fi
+        cat fetch.log
+        grep -q 'bogus-mirror\.invalid' fetch.log
+
+    - name: Test mirrors to an alternate Maven Central mirror
+      uses: ./
+      with:
+        apps: scalafmt
+        mirrors: |
+          https://repo1.maven.org/maven2=https://maven-central.storage-download.googleapis.com/maven2
+    - name: Verify alternate mirror is used
+      shell: bash
+      run: |
+        scalafmt --version
+        COURSIER_CACHE="$RUNNER_TEMP/cs-cache-alt" cs fetch org.scala-lang:scala-library:2.13.14 2>&1 | tee fetch.log
+        grep -q 'maven-central\.storage-download\.googleapis\.com' fetch.log
+        if grep -q 'bogus-mirror\.invalid' fetch.log; then
+          echo "::error::mirror from the previous action run should have been replaced"
+          exit 1
+        fi
