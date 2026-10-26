@@ -32,7 +32,6 @@ jobs:
       shell: bash -l {0}
       run: |
         npm ci
-        test "$OSTYPE" != "msys" || npm run format
         npm run all
 
     # test extraJvmArgs — must run before the main setup so that apps and
