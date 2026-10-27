@@ -3,7 +3,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config({
-    ignores: ["**/dist/", "**/lib/", "**/node_modules/"],
+    ignores: ["**/dist/", "**/lib/", "**/test-build/", "**/node_modules/"],
 }, ...tseslint.configs.recommended, {
     plugins: {
         "@stylistic": stylistic,
@@ -15,7 +15,7 @@ export default tseslint.config({
         },
 
         parserOptions: {
-            project: "./tsconfig.json",
+            project: "./tsconfig.test.json",
         },
     },
 

@@ -14,35 +14,39 @@ const defaultVersion = '2.1.26'
 // compare-versions doesn't know about Coursier milestone versions, like "2.1.25-M3",
 // which come *before* the corresponding release ("2.1.25"). Split those in two, so that
 // we can compare the release parts first, and the milestone numbers only as a tie-breaker.
-function splitMilestone(version: string): [string, number] {
+export function splitMilestone(version: string): [string, number] {
   const match = /^(.+)-M(\d+)$/.exec(version)
   return match ? [match[1], parseInt(match[2], 10)] : [version, Number.MAX_SAFE_INTEGER]
 }
 
-function compareCoursierVersions(a: string, b: string): number {
+export function compareCoursierVersions(a: string, b: string): number {
   const [aVersion, aMilestone] = splitMilestone(a)
   const [bVersion, bMilestone] = splitMilestone(b)
   const versionComparison = compareVersions(aVersion, bVersion)
   return versionComparison === 0 ? Math.sign(aMilestone - bMilestone) : versionComparison
 }
 
-const csVersion = core.getInput('version') || defaultVersion
 // Nightly builds are published under the fixed tag "nightly" (no "v" prefix).
 // See https://github.com/coursier/coursier/releases/tag/nightly
-const isNightly = csVersion === 'nightly'
-const releaseTag = isNightly ? 'nightly' : `v${csVersion}`
-const useVirtusLabRepo =
-  !isNightly &&
-  process.arch === 'arm64' &&
-  ((process.platform == 'darwin' && compareCoursierVersions(csVersion, '2.1.16') < 0) ||
-    (process.platform == 'linux' && compareCoursierVersions(csVersion, '2.1.25-M3') < 0))
-const coursierBinariesGithubRepository = useVirtusLabRepo
-  ? 'https://github.com/VirtusLab/coursier-m1/'
-  : 'https://github.com/coursier/coursier/'
+export function getReleaseTag(version: string): string {
+  return version === 'nightly' ? 'nightly' : `v${version}`
+}
+
+export function useVirtusLabRepo(version: string, platform: string, arch: string): boolean {
+  return (
+    version !== 'nightly' &&
+    arch === 'arm64' &&
+    ((platform == 'darwin' && compareCoursierVersions(version, '2.1.16') < 0) ||
+      (platform == 'linux' && compareCoursierVersions(version, '2.1.25-M3') < 0))
+  )
+}
+
+const csVersion = core.getInput('version') || defaultVersion
+const releaseTag = getReleaseTag(csVersion)
 let resolvedLauncher: string | undefined
 let warnedAboutUseContainerImage = false
 
-function getCoursierArchitecture(arch: string): string {
+export function getCoursierArchitecture(arch: string): string {
   if (arch === 'x64') {
     return 'x86_64'
   } else if (arch === 'arm' || arch === 'arm64') {
@@ -72,12 +76,16 @@ async function execOutput(
   return output.trim()
 }
 
-function launcherInput(name: 'launcher' | 'preferredLauncher'): string {
-  const value = core.getInput(name).trim()
+export function validateLauncher(name: 'launcher' | 'preferredLauncher', input: string): string {
+  const value = input.trim()
   if (value && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value)) {
     throw new Error(`Invalid ${name} value: ${value}`)
   }
   return value
+}
+
+function launcherInput(name: 'launcher' | 'preferredLauncher'): string {
+  return validateLauncher(name, core.getInput(name))
 }
 
 async function downloadJvmCoursier(
@@ -146,6 +154,31 @@ async function installJvmCoursier(launcherType: 'thin' | 'assembly'): Promise<st
   }
 }
 
+// Returns the URL of the native launcher archive for the given platform / architecture.
+// launcher is the launcher flavor ('' for the default one), appended as a suffix.
+export function coursierDownloadUrl(
+  version: string,
+  platform: string,
+  arch: string,
+  launcher: string,
+): string {
+  const repository = useVirtusLabRepo(version, platform, arch)
+    ? 'https://github.com/VirtusLab/coursier-m1/'
+    : 'https://github.com/coursier/coursier/'
+  const baseUrl = `${repository}/releases/download/${getReleaseTag(version)}/cs-${getCoursierArchitecture(arch)}`
+  const launcherSuffix = launcher ? `-${launcher}` : ''
+  switch (platform) {
+    case 'linux':
+      return `${baseUrl}-pc-linux${launcherSuffix}.gz`
+    case 'darwin':
+      return `${baseUrl}-apple-darwin${launcherSuffix}.gz`
+    case 'win32':
+      return `${baseUrl}-pc-win32${launcherSuffix}.zip`
+    default:
+      throw new Error(`Unknown process.platform: ${platform}`)
+  }
+}
+
 async function downloadCoursier(launcher: string): Promise<{ path: string; isDir: boolean }> {
   const architecture = getCoursierArchitecture(process.arch)
   // Windows ARM64 has no GraalVM native image; the default artifact is the jpackage JVM distribution
@@ -156,14 +189,12 @@ async function downloadCoursier(launcher: string): Promise<{ path: string; isDir
       : process.platform === 'win32' && process.arch === 'arm64'
         ? 'jvm'
         : ''
-  const baseUrl = `${coursierBinariesGithubRepository}/releases/download/${releaseTag}/cs-${architecture}`
-  const launcherSuffix = effectiveLauncher ? `-${effectiveLauncher}` : ''
   const isWindowsJvmPackagedLauncher =
     process.platform === 'win32' && process.arch === 'arm64' && effectiveLauncher === 'jvm'
   let csBinary = ''
   switch (process.platform) {
     case 'linux': {
-      const url = `${baseUrl}-pc-linux${launcherSuffix}.gz`
+      const url = coursierDownloadUrl(csVersion, process.platform, process.arch, effectiveLauncher)
       console.log(`Downloading ${url}`)
       const guid = await tc.downloadTool(url)
       const archive = `${guid}.gz`
@@ -172,7 +203,7 @@ async function downloadCoursier(launcher: string): Promise<{ path: string; isDir
       break
     }
     case 'darwin': {
-      const url = `${baseUrl}-apple-darwin${launcherSuffix}.gz`
+      const url = coursierDownloadUrl(csVersion, process.platform, process.arch, effectiveLauncher)
       console.log(`Downloading ${url}`)
       const guid = await tc.downloadTool(url)
       const archive = `${guid}.gz`
@@ -181,7 +212,7 @@ async function downloadCoursier(launcher: string): Promise<{ path: string; isDir
       break
     }
     case 'win32': {
-      const url = `${baseUrl}-pc-win32${launcherSuffix}.zip`
+      const url = coursierDownloadUrl(csVersion, process.platform, process.arch, effectiveLauncher)
       console.log(`Downloading ${url}`)
       const guid = await tc.downloadTool(url)
       const archive = `${guid}.zip`
@@ -209,6 +240,23 @@ async function downloadCoursier(launcher: string): Promise<{ path: string; isDir
   }
   await cli.exec('chmod', ['+x', csBinary])
   return { path: csBinary, isDir: false }
+}
+
+// Parses the extraJvmArgs input into -J-prefixed args, only accepting -D system properties
+export function parseExtraJvmArgs(input: string): string[] {
+  if (!input) return []
+  return input
+    .trim()
+    .split(/\s+/)
+    .map(raw => {
+      const arg = raw.startsWith('-J') ? raw : `-J${raw}`
+      if (!/^-J-D[a-zA-Z][\w]*(\.[a-zA-Z][\w]*)*(=.*)?$/.test(arg)) {
+        throw new Error(
+          `Invalid JVM argument: ${raw}. Expected format: -J-D<key>=<value> (e.g. -J-Dhttps.proxyHost=proxy.example.com)`,
+        )
+      }
+      return arg
+    })
 }
 
 async function cs(...args: string[]): Promise<string> {
@@ -283,22 +331,7 @@ async function cs(...args: string[]): Promise<string> {
     }
   }
 
-  const extraJvmArgsInput = core.getInput('extraJvmArgs')
-  let extraJvmArgs: string[] = []
-  if (extraJvmArgsInput) {
-    extraJvmArgs = extraJvmArgsInput
-      .trim()
-      .split(/\s+/)
-      .map(raw => {
-        const arg = raw.startsWith('-J') ? raw : `-J${raw}`
-        if (!/^-J-D[a-zA-Z][\w]*(\.[a-zA-Z][\w]*)*(=.*)?$/.test(arg)) {
-          throw new Error(
-            `Invalid JVM argument: ${raw}. Expected format: -J-D<key>=<value> (e.g. -J-Dhttps.proxyHost=proxy.example.com)`,
-          )
-        }
-        return arg
-      })
-  }
+  const extraJvmArgs = parseExtraJvmArgs(core.getInput('extraJvmArgs'))
 
   const disableDefaultReposInput = core.getInput('disableDefaultRepos')
 
@@ -341,10 +374,8 @@ async function cs(...args: string[]): Promise<string> {
   return execOutput('cs', [...extraJvmArgs, ...args])
 }
 
-function writeMirrorsFile(): void {
-  const mirrorsInput = core.getInput('mirrors')
-  if (!mirrorsInput.trim()) return
-
+// Turns the from=to lines of the mirrors input into mirror.properties lines
+export function parseMirrors(mirrorsInput: string): string[] {
   const entries = mirrorsInput
     .split('\n')
     .map(line => line.trim())
@@ -365,17 +396,23 @@ function writeMirrorsFile(): void {
     lines.push(`${prefix}.from=${from}`)
     lines.push(`${prefix}.to=${to}`)
   })
+  return lines
+}
 
+function writeMirrorsFile(): void {
+  const mirrorsInput = core.getInput('mirrors')
+  if (!mirrorsInput.trim()) return
+
+  const lines = parseMirrors(mirrorsInput)
+  const entryCount = lines.length / 2
   const configDir = path.join(os.homedir(), '.config', 'coursier')
   fs.mkdirSync(configDir, { recursive: true })
   const mirrorFile = path.join(configDir, 'mirror.properties')
   fs.writeFileSync(mirrorFile, lines.join('\n') + '\n')
-  console.log(
-    `Wrote ${entries.length} mirror entr${entries.length === 1 ? 'y' : 'ies'} to ${mirrorFile}`,
-  )
+  console.log(`Wrote ${entryCount} mirror entr${entryCount === 1 ? 'y' : 'ies'} to ${mirrorFile}`)
 }
 
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
   try {
     writeMirrorsFile()
 
@@ -428,5 +465,3 @@ async function run(): Promise<void> {
     core.setFailed(msg)
   }
 }
-
-run()

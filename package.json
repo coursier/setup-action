@@ -9,8 +9,9 @@
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",
     "lint": "eslint src/**/*.ts",
-    "package": "esbuild src/main.ts --bundle --platform=node --target=node24 --outfile=dist/index.js --sourcemap",
-    "all": "npm run build && npm run format-check && npm run lint && npm run package"
+    "package": "esbuild src/index.ts --bundle --platform=node --target=node24 --outfile=dist/index.js --sourcemap",
+    "test": "tsc -p tsconfig.test.json && esbuild src/*.test.ts --bundle --platform=node --target=node24 --outdir=test-build --log-level=warning && node --test 'test-build/*.test.js'",
+    "all": "npm run build && npm run format-check && npm run lint && npm test && npm run package"
   },
   "repository": {
     "type": "git",
