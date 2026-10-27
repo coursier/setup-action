@@ -51,7 +51,7 @@ inputs:
     default: ''
 outputs:
   cs-version:
-    description: 'Version of the installed Coursier'
+    description: 'Version of the installed Coursier, as reported by "cs version" (e.g. the actual nightly version when version is "nightly")'
 runs:
   using: 'node24'
   main: 'dist/index.js'

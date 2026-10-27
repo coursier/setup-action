@@ -87,7 +87,7 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
 
 ## Outputs
 
-- `cs-version`: version of the installed Coursier (should be the latest available)
+- `cs-version`: version of the installed Coursier, as reported by `cs version` (with `version: nightly`, this is the actual version of the nightly build, not `nightly`)
 
 ## Caching
 
