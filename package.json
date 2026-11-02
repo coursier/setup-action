@@ -2,7 +2,7 @@
   "name": "coursier-setup-action",
   "version": "1.0.0",
   "private": true,
-  "description": "Use Coursier to install JVM and Scala apps",
+  "description": "GitHub Action that installs Coursier, a JVM, and JVM / Scala command-line tools",
   "scripts": {
     "build": "tsc",
     "format": "prettier --write \"**/*.ts\"",
@@ -16,11 +16,21 @@
     "type": "git",
     "url": "git+https://github.com/coursier/setup-action.git"
   },
+  "homepage": "https://github.com/coursier/setup-action#readme",
+  "bugs": {
+    "url": "https://github.com/coursier/setup-action/issues"
+  },
   "keywords": [
     "actions",
-    "scala",
+    "github-actions",
     "coursier",
-    "setup"
+    "setup",
+    "scala",
+    "java",
+    "jvm",
+    "sbt",
+    "scalafmt",
+    "scala-cli"
   ],
   "author": "Alexey Alekhin",
   "license": "MIT",
