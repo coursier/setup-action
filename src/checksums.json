@@ -1,0 +1,24 @@
+{
+  "2.1.26": {
+    "coursier": "eb0c35379e76f44404f777ab0a2335ca5326f6b7721b8cdfa873e87bd9f4ac0c",
+    "coursier.bat": "15d724d5f083032a269126fb007196dc03c8a1a783c1fd270647393fe9a22b6f",
+    "coursier.jar": "d3135830850eddfb9998be66ab4c79478ee6cff56012bb5a177532b1df47c7cc",
+    "cs-aarch64-apple-darwin-sdk.zip": "4e19b55f75f1e051ded0a7aa33bd84ea70e1ac902fe8bbe267e60be6d17850e7",
+    "cs-aarch64-apple-darwin.gz": "8e4d36aa2565276f262af073f0999399e4c2f920f2fe436bb0ae67665eb505e9",
+    "cs-aarch64-pc-linux-container.gz": "5408497d21a728d02333d455f79cc8e445f863adef4fcc75b8ece955fc3ac1e8",
+    "cs-aarch64-pc-linux-sdk.zip": "44f483353644c43484c77f479cb7f6810bf35d11032ff88588a5e2abcf06c105",
+    "cs-aarch64-pc-linux-static.gz": "a7467de3bdd902a827a3f4439b0ca9d800e67b4894d94895c6e01d8666633d7d",
+    "cs-aarch64-pc-linux.gz": "6c358ac223332c8981eb86417d3faf9338a5ef6c95d1879a58162b24c510025c",
+    "cs-aarch64-pc-win32-jvm.zip": "b21c3c25883f1ba34bc560ba3d86cb98a7edbbf5c11768f8d68665f9ec57da3f",
+    "cs-x86_64-apple-darwin-sdk.zip": "1f2770efbe9a934a0b1a7a7d9bb7da8fb450d184e97822ed9d4b575d7999dab6",
+    "cs-x86_64-apple-darwin.gz": "c8045f36fadec075c8647b979d1028435935b0ecd43efa1387cd286c3926a421",
+    "cs-x86_64-pc-linux-compat.gz": "9e98d023b5ff497c566ea47dbd820afebbf05f90e521805c1eb2a79b331809a5",
+    "cs-x86_64-pc-linux-container.gz": "915691ae24b5cd23dc7386f3c4b35ab5a2e36305ec3d5a95d4a0140f0d137a42",
+    "cs-x86_64-pc-linux-jvm.tar.gz": "ce518f165d0624219534c81e9f9a1ca60b62cf1b4f0edc18481b22df2096a165",
+    "cs-x86_64-pc-linux-sdk.zip": "d4edbf89acb78880b1d08fbce33d46b916b9137f9da8ff5ec4835ff18eaeae62",
+    "cs-x86_64-pc-linux-static.gz": "21021ff6689637bd0fce276c91171aabe67c70c72a3c805e6daddbc9ca58f6c4",
+    "cs-x86_64-pc-linux.gz": "348e37bc2a8c706640e6b032c4551a0e055a7f1537485b4a91540e9d3598ec6d",
+    "cs-x86_64-pc-win32-sdk.zip": "63358aca14fc8fdf30cb7838dcbde8e2cbd6f0df9f4bc13af4e708790d66f57e",
+    "cs-x86_64-pc-win32.zip": "d23f4ba6afa7f092135b485303b0a020358fbb314abf9c6dc2576df3e2abd941"
+  }
+}

@@ -2,6 +2,7 @@ import { describe, it } from 'node:test'
 import * as assert from 'node:assert/strict'
 
 import {
+  checkChecksumRequirement,
   compareCoursierVersions,
   coursierDownloadUrl,
   getCoursierArchitecture,
@@ -12,6 +13,7 @@ import {
   useVirtusLabRepo,
   validateLauncher,
 } from './main'
+import pinnedChecksums from './checksums.json'
 
 describe('splitMilestone', () => {
   it('splits milestone versions', () => {
@@ -269,5 +271,29 @@ describe('coursierDownloadUrl', () => {
   it('rejects unknown platforms and architectures', () => {
     assert.throws(() => coursierDownloadUrl('2.1.26', 'freebsd', 'x64', ''), /Unknown/)
     assert.throws(() => coursierDownloadUrl('2.1.26', 'linux', 'ia32', ''), /ia32/)
+  })
+})
+
+describe('checkChecksumRequirement', () => {
+  const checksums = { '2.1.26': { coursier: 'abc' } }
+
+  it('accepts any version when not required', () => {
+    assert.doesNotThrow(() => checkChecksumRequirement('2.1.25', false, checksums))
+    assert.doesNotThrow(() => checkChecksumRequirement('nightly', false, checksums))
+  })
+
+  it('accepts pinned versions when required', () => {
+    assert.doesNotThrow(() => checkChecksumRequirement('2.1.26', true, checksums))
+  })
+
+  it('rejects versions without pinned checksums when required', () => {
+    assert.throws(() => checkChecksumRequirement('2.1.25', true, checksums), /2\.1\.25.*2\.1\.26/)
+    assert.throws(() => checkChecksumRequirement('nightly', true, checksums), /nightly/)
+  })
+
+  it('accepts the versions of the actual checksum table when required', () => {
+    for (const version of Object.keys(pinnedChecksums)) {
+      assert.doesNotThrow(() => checkChecksumRequirement(version, true))
+    }
   })
 })

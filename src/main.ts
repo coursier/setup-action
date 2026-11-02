@@ -1,5 +1,6 @@
 import * as cli from '@actions/exec'
 import * as core from '@actions/core'
+import * as crypto from 'crypto'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
@@ -11,7 +12,14 @@ import { pipeline } from 'stream/promises'
 // but coursier is not published on npm
 import { compareVersions } from 'compare-versions'
 
+import checksums from './checksums.json'
+
 const defaultVersion = '2.1.26'
+
+// SHA-256 of the Coursier release assets, per version then per asset name. The update-coursier
+// workflow regenerates it for the default version, from assets whose build provenance
+// attestation it verified. Downloads of other versions (and of nightlies) aren't verified.
+const pinnedChecksums: { [version: string]: { [asset: string]: string } | undefined } = checksums
 
 // compare-versions doesn't know about Coursier milestone versions, like "2.1.25-M3",
 // which come *before* the corresponding release ("2.1.25"). Split those in two, so that
@@ -73,6 +81,50 @@ async function execOutput(
   return output.trim()
 }
 
+async function sha256(filePath: string): Promise<string> {
+  const hash = crypto.createHash('sha256')
+  for await (const chunk of fs.createReadStream(filePath)) {
+    hash.update(chunk)
+  }
+  return hash.digest('hex')
+}
+
+export function checkChecksumRequirement(
+  version: string,
+  required: boolean,
+  checksums: { [version: string]: unknown } = pinnedChecksums,
+): void {
+  if (required && !checksums[version]) {
+    const pinned = Object.keys(checksums).join(', ')
+    throw new Error(
+      `requireChecksum is enabled, but there are no pinned checksums for Coursier ${version} (pinned versions: ${pinned}). Use one of those versions, or leave version empty to use the default one.`,
+    )
+  }
+}
+
+async function downloadVerified(url: string, csVersion: string): Promise<string> {
+  console.log(`Downloading ${url}`)
+  const filePath = await tc.downloadTool(url)
+  const asset = url.slice(url.lastIndexOf('/') + 1)
+  const versionChecksums = pinnedChecksums[csVersion]
+  if (!versionChecksums) {
+    core.info(`No pinned checksums for Coursier ${csVersion}, not verifying ${asset}`)
+    return filePath
+  }
+  const expected = versionChecksums[asset]
+  const actual = await sha256(filePath)
+  if (actual !== expected) {
+    fs.rmSync(filePath, { force: true })
+    throw new Error(
+      expected
+        ? `Checksum mismatch for ${url}: expected SHA-256 ${expected}, got ${actual}`
+        : `No pinned checksum for ${asset} of Coursier ${csVersion}`,
+    )
+  }
+  core.info(`Verified SHA-256 of ${asset}`)
+  return filePath
+}
+
 export function validateLauncher(name: 'launcher' | 'preferredLauncher', input: string): string {
   const value = input.trim()
   if (value && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value)) {
@@ -96,6 +148,7 @@ interface Config {
   extraJvmArgs: string[]
   disableDefaultRepos: boolean
   customRepositories: string[]
+  requireChecksum: boolean
 }
 
 function readConfig(): Config {
@@ -138,6 +191,8 @@ function readConfig(): Config {
     ? customRepositoryInput.split('|').map(repo => repo.trim())
     : []
 
+  const requireChecksum = core.getBooleanInput('requireChecksum')
+
   return {
     csVersion,
     releaseTag,
@@ -147,6 +202,7 @@ function readConfig(): Config {
     extraJvmArgs,
     disableDefaultRepos,
     customRepositories,
+    requireChecksum,
   }
 }
 
@@ -158,8 +214,7 @@ async function downloadJvmCoursier(
 
   if (launcherType === 'assembly') {
     const url = `${baseUrl}/coursier.jar`
-    console.log(`Downloading ${url}`)
-    const jarDownloaded = await tc.downloadTool(url)
+    const jarDownloaded = await downloadVerified(url, config.csVersion)
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-assembly-'))
     fs.copyFileSync(jarDownloaded, path.join(tempDir, 'coursier.jar'))
 
@@ -180,8 +235,7 @@ async function downloadJvmCoursier(
   }
 
   const url = `${baseUrl}/coursier`
-  console.log(`Downloading ${url}`)
-  const filePath = await tc.downloadTool(url)
+  const filePath = await downloadVerified(url, config.csVersion)
   if (process.platform !== 'win32') {
     fs.chmodSync(filePath, 0o755)
     return { path: filePath, isDir: false }
@@ -269,8 +323,7 @@ async function downloadCoursier(
         process.arch,
         effectiveLauncher,
       )
-      console.log(`Downloading ${url}`)
-      const archive = await tc.downloadTool(url)
+      const archive = await downloadVerified(url, config.csVersion)
       csBinary = await gunzip(archive)
       break
     }
@@ -281,8 +334,7 @@ async function downloadCoursier(
         process.arch,
         effectiveLauncher,
       )
-      console.log(`Downloading ${url}`)
-      const archive = await tc.downloadTool(url)
+      const archive = await downloadVerified(url, config.csVersion)
       csBinary = await gunzip(archive)
       break
     }
@@ -293,8 +345,7 @@ async function downloadCoursier(
         process.arch,
         effectiveLauncher,
       )
-      console.log(`Downloading ${url}`)
-      const guid = await tc.downloadTool(url)
+      const guid = await downloadVerified(url, config.csVersion)
       // Expand-Archive (used by tc.extractZip on some Windows setups) requires a .zip extension
       const archive = `${guid}.zip`
       fs.renameSync(guid, archive)
@@ -476,6 +527,7 @@ function writeMirrorsFile(): void {
 export async function run(): Promise<void> {
   try {
     const config = readConfig()
+    checkChecksumRequirement(config.csVersion, config.requireChecksum)
     writeMirrorsFile()
 
     const coursier = await core.group('Install Coursier', async () => {
