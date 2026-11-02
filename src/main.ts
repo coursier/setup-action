@@ -43,11 +43,6 @@ export function useVirtusLabRepo(version: string, platform: string, arch: string
   )
 }
 
-const csVersion = core.getInput('version') || defaultVersion
-const releaseTag = getReleaseTag(csVersion)
-let resolvedLauncher: string | undefined
-let warnedAboutUseContainerImage = false
-
 export function getCoursierArchitecture(arch: string): string {
   if (arch === 'x64') {
     return 'x86_64'
@@ -90,10 +85,76 @@ function launcherInput(name: 'launcher' | 'preferredLauncher'): string {
   return validateLauncher(name, core.getInput(name))
 }
 
+interface Config {
+  csVersion: string
+  releaseTag: string
+  // Set when launcher is one of the JVM launchers (thin / jvm / assembly)
+  jvmLauncherType: 'thin' | 'assembly' | undefined
+  // Native launcher flavor to download ('' for the default one)
+  nativeLauncher: string
+  preferredLauncher: string
+  extraJvmArgs: string[]
+  disableDefaultRepos: boolean
+  customRepositories: string[]
+}
+
+function readConfig(): Config {
+  const csVersion = core.getInput('version') || defaultVersion
+  const releaseTag = getReleaseTag(csVersion)
+
+  const requiredLauncher = launcherInput('launcher')
+  const preferredLauncher = launcherInput('preferredLauncher')
+  const normalizedLauncher = requiredLauncher.toLowerCase()
+  const normalizedPreferredLauncher = preferredLauncher.toLowerCase()
+  const jvmLaunchers = ['thin', 'jvm', 'assembly']
+  if (jvmLaunchers.includes(normalizedPreferredLauncher)) {
+    throw new Error(
+      `preferredLauncher only accepts native launcher flavors; use launcher for the JVM launcher "${preferredLauncher}"`,
+    )
+  }
+  if (requiredLauncher && preferredLauncher) {
+    throw new Error('launcher and preferredLauncher cannot both be set')
+  }
+  const useContainerImage = core.getBooleanInput('useContainerImage')
+  if (useContainerImage) {
+    core.warning('useContainerImage is deprecated; use launcher: container instead')
+  }
+  const jvmLauncherType: 'thin' | 'assembly' | undefined = jvmLaunchers.includes(normalizedLauncher)
+    ? normalizedLauncher === 'assembly'
+      ? 'assembly'
+      : 'thin'
+    : undefined
+  // Keep the old flag working, but let either of the new inputs take precedence.
+  // Empty launcher on Windows ARM64 downloads cs-aarch64-pc-win32-jvm.zip (see downloadCoursier).
+  const nativeLauncher =
+    requiredLauncher || preferredLauncher || (useContainerImage ? 'container' : '')
+
+  const extraJvmArgs = parseExtraJvmArgs(core.getInput('extraJvmArgs'))
+
+  const disableDefaultRepos = core.getInput('disableDefaultRepos').toLowerCase() === 'true'
+
+  const customRepositoryInput = core.getInput('customRepositories')
+  const customRepositories = customRepositoryInput
+    ? customRepositoryInput.split('|').map(repo => repo.trim())
+    : []
+
+  return {
+    csVersion,
+    releaseTag,
+    jvmLauncherType,
+    nativeLauncher,
+    preferredLauncher,
+    extraJvmArgs,
+    disableDefaultRepos,
+    customRepositories,
+  }
+}
+
 async function downloadJvmCoursier(
+  config: Config,
   launcherType: 'thin' | 'assembly',
 ): Promise<{ path: string; isDir: boolean }> {
-  const baseUrl = `https://github.com/coursier/coursier/releases/download/${releaseTag}`
+  const baseUrl = `https://github.com/coursier/coursier/releases/download/${config.releaseTag}`
 
   if (launcherType === 'assembly') {
     const url = `${baseUrl}/coursier.jar`
@@ -132,23 +193,26 @@ async function downloadJvmCoursier(
   return { path: tempDir, isDir: true }
 }
 
-async function installJvmCoursier(launcherType: 'thin' | 'assembly'): Promise<string> {
+async function installJvmCoursier(
+  config: Config,
+  launcherType: 'thin' | 'assembly',
+): Promise<string> {
   const toolName = `cs-${launcherType}`
-  const previous = tc.find(toolName, csVersion)
+  const previous = tc.find(toolName, config.csVersion)
   if (previous) {
     core.addPath(previous)
     return previous
   }
 
-  const { path: binaryPath, isDir } = await downloadJvmCoursier(launcherType)
+  const { path: binaryPath, isDir } = await downloadJvmCoursier(config, launcherType)
   if (!isDir) {
-    const csCached = await tc.cacheFile(binaryPath, 'cs', toolName, csVersion)
+    const csCached = await tc.cacheFile(binaryPath, 'cs', toolName, config.csVersion)
     core.addPath(csCached)
     return csCached
   }
 
   try {
-    const csCached = await tc.cacheDir(binaryPath, toolName, csVersion)
+    const csCached = await tc.cacheDir(binaryPath, toolName, config.csVersion)
     core.addPath(csCached)
     return csCached
   } finally {
@@ -181,7 +245,10 @@ export function coursierDownloadUrl(
   }
 }
 
-async function downloadCoursier(launcher: string): Promise<{ path: string; isDir: boolean }> {
+async function downloadCoursier(
+  config: Config,
+  launcher: string,
+): Promise<{ path: string; isDir: boolean }> {
   const architecture = getCoursierArchitecture(process.arch)
   // Windows ARM64 has no GraalVM native image; the default artifact is the jpackage JVM distribution
   // (cs-aarch64-pc-win32-jvm.zip), which embeds a runtime under app/ and runtime/.
@@ -196,21 +263,36 @@ async function downloadCoursier(launcher: string): Promise<{ path: string; isDir
   let csBinary = ''
   switch (process.platform) {
     case 'linux': {
-      const url = coursierDownloadUrl(csVersion, process.platform, process.arch, effectiveLauncher)
+      const url = coursierDownloadUrl(
+        config.csVersion,
+        process.platform,
+        process.arch,
+        effectiveLauncher,
+      )
       console.log(`Downloading ${url}`)
       const archive = await tc.downloadTool(url)
       csBinary = await gunzip(archive)
       break
     }
     case 'darwin': {
-      const url = coursierDownloadUrl(csVersion, process.platform, process.arch, effectiveLauncher)
+      const url = coursierDownloadUrl(
+        config.csVersion,
+        process.platform,
+        process.arch,
+        effectiveLauncher,
+      )
       console.log(`Downloading ${url}`)
       const archive = await tc.downloadTool(url)
       csBinary = await gunzip(archive)
       break
     }
     case 'win32': {
-      const url = coursierDownloadUrl(csVersion, process.platform, process.arch, effectiveLauncher)
+      const url = coursierDownloadUrl(
+        config.csVersion,
+        process.platform,
+        process.arch,
+        effectiveLauncher,
+      )
       console.log(`Downloading ${url}`)
       const guid = await tc.downloadTool(url)
       // Expand-Archive (used by tc.extractZip on some Windows setups) requires a .zip extension
@@ -235,6 +317,45 @@ async function downloadCoursier(launcher: string): Promise<{ path: string; isDir
   if (!csBinary) core.setFailed(`Couldn't download Coursier`)
   if (process.platform !== 'win32') fs.chmodSync(csBinary, 0o755)
   return { path: csBinary, isDir: false }
+}
+
+async function installNativeCoursier(config: Config): Promise<void> {
+  const requestedLauncher = config.nativeLauncher
+  const toolName = requestedLauncher ? `cs-launcher-${requestedLauncher}` : 'cs'
+
+  const previous = tc.find(toolName, config.csVersion)
+  if (previous) {
+    core.addPath(previous)
+    return
+  }
+
+  let downloadedLauncher = requestedLauncher
+  let downloaded: { path: string; isDir: boolean }
+  try {
+    downloaded = await downloadCoursier(config, requestedLauncher)
+  } catch (error: unknown) {
+    if (
+      config.preferredLauncher &&
+      error instanceof tc.HTTPError &&
+      error.httpStatusCode !== undefined &&
+      error.httpStatusCode >= 400 &&
+      error.httpStatusCode < 500
+    ) {
+      core.warning(
+        `Preferred Coursier launcher "${config.preferredLauncher}" is not available (HTTP ${error.httpStatusCode}); falling back to the default launcher`,
+      )
+      downloadedLauncher = ''
+      downloaded = await downloadCoursier(config, '')
+    } else {
+      throw error
+    }
+  }
+  const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs'
+  const downloadedToolName = downloadedLauncher ? `cs-launcher-${downloadedLauncher}` : 'cs'
+  const csCached = downloaded.isDir
+    ? await tc.cacheDir(downloaded.path, downloadedToolName, config.csVersion)
+    : await tc.cacheFile(downloaded.path, binaryName, downloadedToolName, config.csVersion)
+  core.addPath(csCached)
 }
 
 // Parses the extraJvmArgs input into -J-prefixed args, only accepting -D system properties
@@ -262,119 +383,56 @@ async function gunzip(archive: string): Promise<string> {
   return dest
 }
 
-async function cs(...args: string[]): Promise<string> {
-  const requiredLauncher = launcherInput('launcher')
-  const preferredLauncher = launcherInput('preferredLauncher')
-  const normalizedLauncher = requiredLauncher.toLowerCase()
-  const normalizedPreferredLauncher = preferredLauncher.toLowerCase()
-  const jvmLaunchers = ['thin', 'jvm', 'assembly']
-  if (jvmLaunchers.includes(normalizedPreferredLauncher)) {
-    throw new Error(
-      `preferredLauncher only accepts native launcher flavors; use launcher for the JVM launcher "${preferredLauncher}"`,
-    )
-  }
-  if (requiredLauncher && preferredLauncher) {
-    throw new Error('launcher and preferredLauncher cannot both be set')
-  }
-  const useContainerImage = core.getBooleanInput('useContainerImage')
-  if (useContainerImage && !warnedAboutUseContainerImage) {
-    core.warning('useContainerImage is deprecated; use launcher: container instead')
-    warnedAboutUseContainerImage = true
-  }
-  const jvmLauncherType: 'thin' | 'assembly' | undefined = jvmLaunchers.includes(normalizedLauncher)
-    ? normalizedLauncher === 'assembly'
-      ? 'assembly'
-      : 'thin'
-    : undefined
-  let jvmLauncherPath: string | undefined
+// How to run the installed launcher
+interface Coursier {
+  // On Windows, JVM launchers are run via `java -jar <jar>`
+  windowsJar?: string
+  // The Windows ARM64 jpackage launcher (cs-aarch64-pc-win32-jvm.zip) does not support
+  // GraalVM-style -J flags; they are treated as application args and break CLI parsing.
+  // Extra JVM properties are passed via JAVA_TOOL_OPTIONS instead.
+  usesJavaToolOptions: boolean
+}
+
+async function installCoursier(config: Config): Promise<Coursier> {
+  const { jvmLauncherType } = config
   if (jvmLauncherType) {
-    jvmLauncherPath = await installJvmCoursier(jvmLauncherType)
-  } else {
-    // Keep the old flag working, but let either of the new inputs take precedence.
-    // Empty launcher on Windows ARM64 downloads cs-aarch64-pc-win32-jvm.zip (see downloadCoursier).
-    const configuredLauncher =
-      requiredLauncher || preferredLauncher || (useContainerImage ? 'container' : '')
-    const requestedLauncher = resolvedLauncher ?? configuredLauncher
-    const toolName = requestedLauncher ? `cs-launcher-${requestedLauncher}` : 'cs'
-
-    const previous = tc.find(toolName, csVersion)
-    if (previous) {
-      resolvedLauncher = requestedLauncher
-      core.addPath(previous)
-    } else {
-      let downloadedLauncher = requestedLauncher
-      let downloaded: { path: string; isDir: boolean }
-      try {
-        downloaded = await downloadCoursier(requestedLauncher)
-      } catch (error: unknown) {
-        if (
-          preferredLauncher &&
-          resolvedLauncher === undefined &&
-          error instanceof tc.HTTPError &&
-          error.httpStatusCode !== undefined &&
-          error.httpStatusCode >= 400 &&
-          error.httpStatusCode < 500
-        ) {
-          core.warning(
-            `Preferred Coursier launcher "${preferredLauncher}" is not available (HTTP ${error.httpStatusCode}); falling back to the default launcher`,
-          )
-          downloadedLauncher = ''
-          downloaded = await downloadCoursier('')
-        } else {
-          throw error
-        }
-      }
-      const binaryName = process.platform === 'win32' ? 'cs.exe' : 'cs'
-      const downloadedToolName = downloadedLauncher ? `cs-launcher-${downloadedLauncher}` : 'cs'
-      const csCached = downloaded.isDir
-        ? await tc.cacheDir(downloaded.path, downloadedToolName, csVersion)
-        : await tc.cacheFile(downloaded.path, binaryName, downloadedToolName, csVersion)
-      resolvedLauncher = downloadedLauncher
-      core.addPath(csCached)
+    const jvmLauncherPath = await installJvmCoursier(config, jvmLauncherType)
+    if (process.platform === 'win32') {
+      const jarName = jvmLauncherType === 'assembly' ? 'coursier.jar' : 'coursier'
+      return { windowsJar: path.join(jvmLauncherPath, jarName), usesJavaToolOptions: false }
     }
+    return { usesJavaToolOptions: false }
   }
 
-  const extraJvmArgs = parseExtraJvmArgs(core.getInput('extraJvmArgs'))
+  await installNativeCoursier(config)
+  return { usesJavaToolOptions: process.platform === 'win32' && process.arch === 'arm64' }
+}
 
-  const disableDefaultReposInput = core.getInput('disableDefaultRepos')
+async function cs(config: Config, coursier: Coursier, ...args: string[]): Promise<string> {
+  const { extraJvmArgs } = config
+  const csArgs = [
+    ...args,
+    ...(config.disableDefaultRepos ? ['--no-default'] : []),
+    ...config.customRepositories.flatMap(repo => ['-r', repo]),
+  ]
 
-  if (disableDefaultReposInput.toLowerCase() === 'true') {
-    args.push('--no-default')
-  }
-
-  const customRepositoryInput = core.getInput('customRepositories')
-  if (customRepositoryInput) {
-    const repositories = customRepositoryInput.split('|')
-
-    // For each repository, push the `-r` flag and the repository itself to the args list
-    repositories.forEach(repo => {
-      args.push('-r', repo.trim())
-    })
-  }
-
-  if (process.platform === 'win32' && jvmLauncherType && jvmLauncherPath) {
-    const jarName = jvmLauncherType === 'assembly' ? 'coursier.jar' : 'coursier'
+  if (coursier.windowsJar) {
     return execOutput('java', [
       ...extraJvmArgs.map(arg => arg.slice(2)),
       '-jar',
-      path.join(jvmLauncherPath, jarName),
-      ...args,
+      coursier.windowsJar,
+      ...csArgs,
     ])
   }
 
-  // The Windows ARM64 jpackage launcher (cs-aarch64-pc-win32-jvm.zip) does not support
-  // GraalVM-style -J flags; they are treated as application args and break CLI parsing.
-  // Pass extra JVM properties via JAVA_TOOL_OPTIONS instead.
-  const usesWindowsJvmPackagedLauncher =
-    process.platform === 'win32' && process.arch === 'arm64' && !jvmLauncherType
-  if (usesWindowsJvmPackagedLauncher && extraJvmArgs.length) {
+  if (coursier.usesJavaToolOptions && extraJvmArgs.length) {
     const toolOptions = extraJvmArgs.map(arg => arg.slice(2)).join(' ')
     const env: { [key: string]: string } = { ...process.env } as { [key: string]: string }
     env.JAVA_TOOL_OPTIONS = [process.env.JAVA_TOOL_OPTIONS, toolOptions].filter(Boolean).join(' ')
-    return execOutput('cs', args, env)
+    return execOutput('cs', csArgs, env)
   }
 
-  return execOutput('cs', [...extraJvmArgs, ...args])
+  return execOutput('cs', [...extraJvmArgs, ...csArgs])
 }
 
 // Turns the from=to lines of the mirrors input into mirror.properties lines
@@ -417,10 +475,12 @@ function writeMirrorsFile(): void {
 
 export async function run(): Promise<void> {
   try {
+    const config = readConfig()
     writeMirrorsFile()
 
-    await core.group('Install Coursier', async () => {
-      await cs('--help')
+    const coursier = await core.group('Install Coursier', async () => {
+      const coursier = await installCoursier(config)
+      await cs(config, coursier, '--help')
       // cs is on the PATH now. Call it directly rather than via cs(), as `cs version`
       // rejects the --no-default / -r options that cs() may append.
       let installedVersion = ''
@@ -431,11 +491,12 @@ export async function run(): Promise<void> {
       }
       if (!/^\S+$/.test(installedVersion)) {
         core.warning(
-          `Could not get the installed Coursier version from "cs version", reporting ${csVersion} instead`,
+          `Could not get the installed Coursier version from "cs version", reporting ${config.csVersion} instead`,
         )
-        installedVersion = csVersion
+        installedVersion = config.csVersion
       }
       core.setOutput('cs-version', installedVersion)
+      return coursier
     })
 
     await core.group('Install JVM', async () => {
@@ -447,8 +508,8 @@ export async function run(): Promise<void> {
         core.info(`skipping, JVM is already installed in ${process.env.JAVA_HOME}`)
         core.setOutput('java-home', process.env.JAVA_HOME)
       } else {
-        await cs('java', ...jvmArg, ...jvmIndexArg, '-version')
-        const csJavaHome = await cs('java-home', ...jvmArg, ...jvmIndexArg)
+        await cs(config, coursier, 'java', ...jvmArg, ...jvmIndexArg, '-version')
+        const csJavaHome = await cs(config, coursier, 'java-home', ...jvmArg, ...jvmIndexArg)
         core.exportVariable('JAVA_HOME', csJavaHome)
         core.addPath(path.join(csJavaHome, 'bin'))
         core.setOutput('java-home', csJavaHome)
@@ -462,7 +523,7 @@ export async function run(): Promise<void> {
         const coursierBinDir = path.join(os.homedir(), 'cs', 'bin')
         core.exportVariable('COURSIER_BIN_DIR', coursierBinDir)
         core.addPath(coursierBinDir)
-        await cs('install', '--contrib', ...apps)
+        await cs(config, coursier, 'install', '--contrib', ...apps)
         core.setOutput('cs-bin-dir', coursierBinDir)
       }
     })
