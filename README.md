@@ -63,7 +63,7 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
 
 ```yml
   steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - uses: coursier/setup-action@v3
       with:
         jvm: adopt:11
@@ -79,7 +79,7 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
 
 ```yml
   steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - uses: coursier/setup-action@v3
       with:
         version: nightly
@@ -97,7 +97,7 @@ This action should work well with the official Coursier [cache-action](https://g
 
 ```yml
   steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - uses: coursier/cache-action@v8
     - uses: coursier/setup-action@v3
 ```
