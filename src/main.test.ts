@@ -157,27 +157,27 @@ describe('parseMirrors', () => {
           'https://repo.example.com/a = https://mirror.example.com/a',
       ),
       [
-        'mirror0.from=https://repo1.maven.org/maven2',
-        'mirror0.to=https://mirror.example.com/maven2',
-        'mirror1.from=https://repo.example.com/a',
-        'mirror1.to=https://mirror.example.com/a',
+        'setupActionMirror0.from=https://repo1.maven.org/maven2',
+        'setupActionMirror0.to=https://mirror.example.com/maven2',
+        'setupActionMirror1.from=https://repo.example.com/a',
+        'setupActionMirror1.to=https://mirror.example.com/a',
       ],
     )
   })
 
   it('ignores comments and blank lines', () => {
     assert.deepEqual(parseMirrors('# comment\n\n  \n  a=b  \n  # another\nc=d\n'), [
-      'mirror0.from=a',
-      'mirror0.to=b',
-      'mirror1.from=c',
-      'mirror1.to=d',
+      'setupActionMirror0.from=a',
+      'setupActionMirror0.to=b',
+      'setupActionMirror1.from=c',
+      'setupActionMirror1.to=d',
     ])
   })
 
   it('only splits on the first =', () => {
     assert.deepEqual(parseMirrors('https://a/?x=1=https://b/?y=2'), [
-      'mirror0.from=https://a/?x',
-      'mirror0.to=1=https://b/?y=2',
+      'setupActionMirror0.from=https://a/?x',
+      'setupActionMirror0.to=1=https://b/?y=2',
     ])
   })
 
