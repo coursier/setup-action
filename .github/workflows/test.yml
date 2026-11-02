@@ -15,6 +15,7 @@ concurrency:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -117,6 +118,7 @@ jobs:
 
   test-jvm-launchers:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     permissions:
       contents: read
     strategy:
@@ -174,6 +176,7 @@ jobs:
 
   test-nightly:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -209,6 +212,7 @@ jobs:
 
   test-mirrors:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     permissions:
       contents: read
     strategy:
@@ -278,6 +282,7 @@ jobs:
   # static and compat on x86_64, container and static on aarch64.
   test-native-launcher-flavors:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     permissions:
       contents: read
     strategy:
@@ -332,6 +337,7 @@ jobs:
   # run there too.
   test-missing-launcher-flavor:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     permissions:
       contents: read
     strategy:
@@ -426,6 +432,7 @@ jobs:
 
   test-jvm-index:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
