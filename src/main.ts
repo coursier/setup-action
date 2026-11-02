@@ -445,11 +445,13 @@ export async function run(): Promise<void> {
       const jvmIndexArg = jvmIndexInput ? ['--jvm-index', jvmIndexInput] : []
       if (!jvmInput && process.env.JAVA_HOME) {
         core.info(`skipping, JVM is already installed in ${process.env.JAVA_HOME}`)
+        core.setOutput('java-home', process.env.JAVA_HOME)
       } else {
         await cs('java', ...jvmArg, ...jvmIndexArg, '-version')
         const csJavaHome = await cs('java-home', ...jvmArg, ...jvmIndexArg)
         core.exportVariable('JAVA_HOME', csJavaHome)
         core.addPath(path.join(csJavaHome, 'bin'))
+        core.setOutput('java-home', csJavaHome)
       }
     })
 
@@ -461,6 +463,7 @@ export async function run(): Promise<void> {
         core.exportVariable('COURSIER_BIN_DIR', coursierBinDir)
         core.addPath(coursierBinDir)
         await cs('install', '--contrib', ...apps)
+        core.setOutput('cs-bin-dir', coursierBinDir)
       }
     })
   } catch (error: unknown) {

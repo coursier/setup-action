@@ -88,6 +88,8 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
 ## Outputs
 
 - `cs-version`: version of the installed Coursier, as reported by `cs version` (with `version: nightly`, this is the actual version of the nightly build, not `nightly`)
+- `java-home`: `JAVA_HOME` in effect after the action: the JVM installed by Coursier, or the pre-existing `JAVA_HOME` when no `jvm` input was given and `JAVA_HOME` was already set
+- `cs-bin-dir`: directory the apps were installed to (also exported as `COURSIER_BIN_DIR`). Only set when apps are installed; when `apps` is empty, it is not set (and evaluates to an empty string)
 
 ## Caching
 

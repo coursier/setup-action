@@ -79,6 +79,24 @@ jobs:
     - run: echo $JAVA_HOME
     - run: java -version
     - run: cs java -version
+    - name: Verify java-home output
+      shell: bash
+      env:
+        JAVA_HOME_OUTPUT: ${{ steps.cs-setup.outputs.java-home }}
+      run: |
+        test "$JAVA_HOME_OUTPUT" = "$JAVA_HOME"
+        "$JAVA_HOME_OUTPUT/bin/java" -version
+
+    # test cs-bin-dir output
+    - name: Verify cs-bin-dir output
+      shell: bash
+      env:
+        CS_BIN_DIR_OUTPUT: ${{ steps.cs-setup.outputs.cs-bin-dir }}
+      run: |
+        test -n "$CS_BIN_DIR_OUTPUT"
+        test "$CS_BIN_DIR_OUTPUT" = "$COURSIER_BIN_DIR"
+        ls "$CS_BIN_DIR_OUTPUT"
+        ls "$CS_BIN_DIR_OUTPUT" | grep -E '^amm(\.bat|\.exe)?$'
 
     # test installed apps
     - run: sbt "show name"
