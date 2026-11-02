@@ -388,6 +388,7 @@ jobs:
       env:
         INPUT_USECONTAINERIMAGE: 'false'
         INPUT_REQUIRECHECKSUM: 'false'
+        INPUT_DISABLEDEFAULTREPOS: 'false'
       run: |
         run_action() {
           local name="$1"; shift
