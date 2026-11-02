@@ -5,6 +5,13 @@ on:
     - main
   pull_request:
 
+# On main, only keep the run of the latest commit: a new push cancels the
+# in-progress run of the previous one. Other runs (PRs) each get their own
+# group, so they're never cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main' || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
