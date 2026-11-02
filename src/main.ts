@@ -4,6 +4,8 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import * as tc from '@actions/tool-cache'
+import * as zlib from 'zlib'
+import { pipeline } from 'stream/promises'
 
 // would have preferred to use coursier.core.Version here,
 // but coursier is not published on npm
@@ -120,7 +122,7 @@ async function downloadJvmCoursier(
   console.log(`Downloading ${url}`)
   const filePath = await tc.downloadTool(url)
   if (process.platform !== 'win32') {
-    await cli.exec('chmod', ['+x', filePath])
+    fs.chmodSync(filePath, 0o755)
     return { path: filePath, isDir: false }
   }
 
@@ -196,49 +198,42 @@ async function downloadCoursier(launcher: string): Promise<{ path: string; isDir
     case 'linux': {
       const url = coursierDownloadUrl(csVersion, process.platform, process.arch, effectiveLauncher)
       console.log(`Downloading ${url}`)
-      const guid = await tc.downloadTool(url)
-      const archive = `${guid}.gz`
-      await cli.exec('mv', [guid, archive])
-      csBinary = archive
+      const archive = await tc.downloadTool(url)
+      csBinary = await gunzip(archive)
       break
     }
     case 'darwin': {
       const url = coursierDownloadUrl(csVersion, process.platform, process.arch, effectiveLauncher)
       console.log(`Downloading ${url}`)
-      const guid = await tc.downloadTool(url)
-      const archive = `${guid}.gz`
-      await cli.exec('mv', [guid, archive])
-      csBinary = archive
+      const archive = await tc.downloadTool(url)
+      csBinary = await gunzip(archive)
       break
     }
     case 'win32': {
       const url = coursierDownloadUrl(csVersion, process.platform, process.arch, effectiveLauncher)
       console.log(`Downloading ${url}`)
       const guid = await tc.downloadTool(url)
+      // Expand-Archive (used by tc.extractZip on some Windows setups) requires a .zip extension
       const archive = `${guid}.zip`
-      await cli.exec('mv', [guid, archive])
-      csBinary = archive
+      fs.renameSync(guid, archive)
+      const destDir = await tc.extractZip(archive, guid)
+      if (isWindowsJvmPackagedLauncher) {
+        // jpackage layout: cs.exe plus app/ and runtime/ — keep the full tree.
+        return { path: destDir, isDir: true }
+      }
+      const exeName = `cs-${architecture}-pc-win32.exe`
+      const exe = fs
+        .readdirSync(destDir, { recursive: true, encoding: 'utf8' })
+        .find(entry => path.basename(entry) === exeName)
+      if (!exe) throw new Error(`${exeName} not found in ${url}`)
+      csBinary = path.join(destDir, exe)
       break
     }
     default:
       core.setFailed(`Unknown process.platform: ${process.platform}`)
   }
   if (!csBinary) core.setFailed(`Couldn't download Coursier`)
-  if (csBinary.endsWith('.gz')) {
-    await cli.exec('gzip', ['-d', csBinary])
-    csBinary = csBinary.slice(0, csBinary.length - '.gz'.length)
-  }
-  if (csBinary.endsWith('.zip')) {
-    const destDir = csBinary.slice(0, csBinary.length - '.zip'.length)
-    if (isWindowsJvmPackagedLauncher) {
-      // jpackage layout: cs.exe plus app/ and runtime/ — keep the full tree.
-      await cli.exec('unzip', [csBinary, '-d', destDir])
-      return { path: destDir, isDir: true }
-    }
-    await cli.exec('unzip', ['-j', csBinary, `cs-${architecture}-pc-win32.exe`, '-d', destDir])
-    csBinary = `${destDir}\\cs-${architecture}-pc-win32.exe`
-  }
-  await cli.exec('chmod', ['+x', csBinary])
+  if (process.platform !== 'win32') fs.chmodSync(csBinary, 0o755)
   return { path: csBinary, isDir: false }
 }
 
@@ -257,6 +252,14 @@ export function parseExtraJvmArgs(input: string): string[] {
       }
       return arg
     })
+}
+
+// Decompresses a .gz file next to it, removes the archive, and returns the decompressed file path
+async function gunzip(archive: string): Promise<string> {
+  const dest = `${archive}-cs`
+  await pipeline(fs.createReadStream(archive), zlib.createGunzip(), fs.createWriteStream(dest))
+  fs.rmSync(archive, { force: true })
+  return dest
 }
 
 async function cs(...args: string[]): Promise<string> {
