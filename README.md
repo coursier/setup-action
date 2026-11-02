@@ -29,6 +29,7 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
 - `version` (optional): Coursier version to install
   - a release version such as `2.1.25-M26` (defaults to a recent release when left empty)
   - `nightly` installs the latest [nightly build](https://github.com/coursier/coursier/releases/tag/nightly)
+  - the launchers of the default version are checked against SHA-256 checksums pinned in the action (taken from launchers whose [build provenance attestation](https://github.com/coursier/coursier/attestations) was verified); other versions and nightlies aren't checked (see `requireChecksum`)
 
 - `customRepositories` (optional): ''
   - Pipe separated list of [repositories](https://get-coursier.io/docs/other-repositories) to supply to coursier
@@ -58,6 +59,9 @@ Inspired by [olafurpg/setup-scala](https://github.com/olafurpg/setup-scala) and 
   - Downloads the same launcher as `launcher`, but falls back to the default launcher with a warning when the flavored download returns a 4xx HTTP response.
   - The JVM launcher values `thin`, `jvm`, and `assembly` are rejected; pass those via `launcher`.
   - Cannot be used together with `launcher`.
+
+- `requireChecksum` (optional): `false` by default
+  - when `true`, the action fails unless the Coursier launcher can be checked against a pinned SHA-256 checksum, which means `version` must be left empty (or set to the default version)
 
 - `useContainerImage` (optional): Deprecated alias for `launcher: container`.
 

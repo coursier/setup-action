@@ -37,6 +37,10 @@ inputs:
     description: 'Space-separated list of -D JVM property args passed to every cs invocation. The -J prefix is added automatically if missing (e.g. -Dhttps.proxyHost=proxy.example.com -Dhttps.proxyPort=8080)'
     required: false
     default: ''
+  requireChecksum:
+    description: 'Whether to require the downloaded Coursier launcher to be checked against a checksum pinned in the action. Only the default Coursier version has pinned checksums, so when enabled, version must be left empty (or set to the default version).'
+    required: false
+    default: 'false'
   useContainerImage:
     description: 'Deprecated alias for launcher: container.'
     required: false

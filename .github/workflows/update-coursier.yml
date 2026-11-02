@@ -53,6 +53,26 @@ jobs:
             "s/^const defaultVersion = '[^']+'$/const defaultVersion = '$VERSION'/" \
             src/main.ts
 
+      # Only pin the checksums of assets built by the coursier/coursier CI from the release tag.
+      - name: Update Coursier checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.coursier.outputs.version }}
+        shell: bash
+        run: |
+          assets=$(mktemp -d)
+          gh release download "v$VERSION" --repo coursier/coursier --dir "$assets"
+          for asset in "$assets"/*; do
+            gh attestation verify "$asset" \
+              --repo coursier/coursier \
+              --source-ref "refs/tags/v$VERSION" \
+              --deny-self-hosted-runners
+          done
+          (cd "$assets" && sha256sum -- *) | jq -R -n --arg version "$VERSION" \
+            '{($version): [inputs | capture("^(?<sha>[0-9a-f]{64}) [ *](?<name>.+)$") | {(.name): .sha}] | add}' \
+            > src/checksums.json
+          rm -rf "$assets"
+
       - name: Create pull request
         uses: peter-evans/create-pull-request@v8
         with:
@@ -61,4 +81,5 @@ jobs:
           commit-message: Update Coursier to ${{ steps.coursier.outputs.version }}
           title: Update Coursier to ${{ steps.coursier.outputs.version }}
           body: |
-            Updates the default Coursier version to `${{ steps.coursier.outputs.version }}`.
+            Updates the default Coursier version to `${{ steps.coursier.outputs.version }}`, and pins the
+            checksums of its launchers (after verifying their build provenance attestations).

@@ -380,6 +380,7 @@ jobs:
       shell: bash
       env:
         INPUT_USECONTAINERIMAGE: 'false'
+        INPUT_REQUIRECHECKSUM: 'false'
       run: |
         run_action() {
           local name="$1"; shift
@@ -408,6 +409,13 @@ jobs:
           exit 1
         fi
         check_log missing-launcher '::error::Unexpected HTTP response: 404'
+
+        if run_action unpinned-version INPUT_REQUIRECHECKSUM=true INPUT_VERSION=2.1.25; then
+          cat .ci-tmp/unpinned-version/log
+          echo "::error::requireChecksum: true with version: 2.1.25 should have failed but didn't"
+          exit 1
+        fi
+        check_log unpinned-version '::error::requireChecksum is enabled, but there are no pinned checksums for Coursier 2.1.25'
 
   test-jvm-index:
     runs-on: ubuntu-latest
