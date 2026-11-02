@@ -257,7 +257,7 @@ jobs:
     - name: Verify alternate mirror is used
       shell: bash
       run: |
-        scalafmt --version
+        if [ "$RUNNER_OS" = "Windows" ]; then scalafmt.bat --version; else scalafmt --version; fi
         COURSIER_CACHE="$RUNNER_TEMP/cs-cache-alt" cs fetch org.scala-lang:scala-library:2.13.14 2>&1 | tee fetch.log
         grep -q 'maven-central\.storage-download\.googleapis\.com' fetch.log
         if grep -q 'bogus-mirror\.invalid' fetch.log; then
