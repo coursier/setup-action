@@ -2154,9 +2154,9 @@ var require_dispatcher_base = __commonJS({
       }
       close(callback) {
         if (callback === void 0) {
-          return new Promise((resolve2, reject) => {
+          return new Promise((resolve3, reject) => {
             this.close((err, data) => {
-              return err ? reject(err) : resolve2(data);
+              return err ? reject(err) : resolve3(data);
             });
           });
         }
@@ -2194,12 +2194,12 @@ var require_dispatcher_base = __commonJS({
           err = null;
         }
         if (callback === void 0) {
-          return new Promise((resolve2, reject) => {
+          return new Promise((resolve3, reject) => {
             this.destroy(err, (err2, data) => {
               return err2 ? (
                 /* istanbul ignore next: should never error */
                 reject(err2)
-              ) : resolve2(data);
+              ) : resolve3(data);
             });
           });
         }
@@ -4071,7 +4071,7 @@ var require_util2 = __commonJS({
   "node_modules/undici/lib/web/fetch/util.js"(exports2, module2) {
     "use strict";
     var { Transform } = require("node:stream");
-    var zlib = require("node:zlib");
+    var zlib2 = require("node:zlib");
     var { redirectStatusSet, referrerPolicySet: referrerPolicyTokens, badPortsSet } = require_constants3();
     var { getGlobalOrigin } = require_global();
     var { collectASequenceOfCodePoints, collectAnHTTPQuotedString, removeChars, parseMIMEType } = require_data_url();
@@ -4081,11 +4081,11 @@ var require_util2 = __commonJS({
     var { isUint8Array } = require("node:util/types");
     var { webidl } = require_webidl();
     var supportedHashes = [];
-    var crypto3;
+    var crypto4;
     try {
-      crypto3 = require("node:crypto");
+      crypto4 = require("node:crypto");
       const possibleRelevantHashes = ["sha256", "sha384", "sha512"];
-      supportedHashes = crypto3.getHashes().filter((hash) => possibleRelevantHashes.includes(hash));
+      supportedHashes = crypto4.getHashes().filter((hash) => possibleRelevantHashes.includes(hash));
     } catch {
     }
     function responseURL(response) {
@@ -4358,7 +4358,7 @@ var require_util2 = __commonJS({
       }
     }
     function bytesMatch(bytes, metadataList) {
-      if (crypto3 === void 0) {
+      if (crypto4 === void 0) {
         return true;
       }
       const parsedMetadata = parseMetadata(metadataList);
@@ -4373,7 +4373,7 @@ var require_util2 = __commonJS({
       for (const item of metadata) {
         const algorithm = item.algo;
         const expectedValue = item.hash;
-        let actualValue = crypto3.createHash(algorithm).update(bytes).digest("base64");
+        let actualValue = crypto4.createHash(algorithm).update(bytes).digest("base64");
         if (actualValue[actualValue.length - 1] === "=") {
           if (actualValue[actualValue.length - 2] === "=") {
             actualValue = actualValue.slice(0, -2);
@@ -4466,8 +4466,8 @@ var require_util2 = __commonJS({
     function createDeferredPromise() {
       let res;
       let rej;
-      const promise = new Promise((resolve2, reject) => {
-        res = resolve2;
+      const promise = new Promise((resolve3, reject) => {
+        res = resolve3;
         rej = reject;
       });
       return { promise, resolve: res, reject: rej };
@@ -4771,7 +4771,7 @@ var require_util2 = __commonJS({
             callback();
             return;
           }
-          this._inflateStream = (chunk[0] & 15) === 8 ? zlib.createInflate(this.#zlibOptions) : zlib.createInflateRaw(this.#zlibOptions);
+          this._inflateStream = (chunk[0] & 15) === 8 ? zlib2.createInflate(this.#zlibOptions) : zlib2.createInflateRaw(this.#zlibOptions);
           this._inflateStream.on("data", this.push.bind(this));
           this._inflateStream.on("end", () => this.push(null));
           this._inflateStream.on("error", (err) => this.destroy(err));
@@ -5437,8 +5437,8 @@ var require_body = __commonJS({
     var { multipartFormDataParser } = require_formdata_parser();
     var random;
     try {
-      const crypto3 = require("node:crypto");
-      random = (max) => crypto3.randomInt(0, max);
+      const crypto4 = require("node:crypto");
+      random = (max) => crypto4.randomInt(0, max);
     } catch {
       random = (max) => Math.floor(Math.random(max));
     }
@@ -6718,12 +6718,12 @@ upgrade: ${upgrade}\r
           cb();
         }
       }
-      const waitForDrain = () => new Promise((resolve2, reject) => {
+      const waitForDrain = () => new Promise((resolve3, reject) => {
         assert(callback === null);
         if (socket[kError]) {
           reject(socket[kError]);
         } else {
-          callback = resolve2;
+          callback = resolve3;
         }
       });
       socket.on("close", onDrain).on("drain", onDrain);
@@ -6861,7 +6861,7 @@ var require_client_h2 = __commonJS({
     "use strict";
     var assert = require("node:assert");
     var { errorMonitor } = require("node:events");
-    var { pipeline: pipeline2 } = require("node:stream");
+    var { pipeline: pipeline3 } = require("node:stream");
     var util2 = require_util();
     var {
       RequestContentLengthMismatchError,
@@ -7340,7 +7340,7 @@ var require_client_h2 = __commonJS({
     }
     function writeStream(abort, socket, expectsPayload, h2stream, body, client, request, contentLength) {
       assert(contentLength !== 0 || client[kRunning] === 0, "stream body cannot be pipelined");
-      const pipe = pipeline2(
+      const pipe = pipeline3(
         body,
         h2stream,
         (err) => {
@@ -7393,12 +7393,12 @@ var require_client_h2 = __commonJS({
           cb();
         }
       }
-      const waitForDrain = () => new Promise((resolve2, reject) => {
+      const waitForDrain = () => new Promise((resolve3, reject) => {
         assert(callback === null);
         if (socket[kError]) {
           reject(socket[kError]);
         } else {
-          callback = resolve2;
+          callback = resolve3;
         }
       });
       h2stream.on("close", onDrain).on("drain", onDrain);
@@ -7877,16 +7877,16 @@ var require_client = __commonJS({
         return this[kNeedDrain] < 2;
       }
       async [kClose]() {
-        return new Promise((resolve2) => {
+        return new Promise((resolve3) => {
           if (this[kSize]) {
-            this[kClosedResolve] = resolve2;
+            this[kClosedResolve] = resolve3;
           } else {
-            resolve2(null);
+            resolve3(null);
           }
         });
       }
       async [kDestroy](err) {
-        return new Promise((resolve2) => {
+        return new Promise((resolve3) => {
           const requests = this[kQueue].splice(this[kPendingIdx]);
           for (let i = 0; i < requests.length; i++) {
             const request = requests[i];
@@ -7897,7 +7897,7 @@ var require_client = __commonJS({
               this[kClosedResolve]();
               this[kClosedResolve] = null;
             }
-            resolve2(null);
+            resolve3(null);
           };
           if (this[kHTTPContext]) {
             this[kHTTPContext].destroy(err, callback);
@@ -7948,7 +7948,7 @@ var require_client = __commonJS({
         });
       }
       try {
-        const socket = await new Promise((resolve2, reject) => {
+        const socket = await new Promise((resolve3, reject) => {
           client[kConnector]({
             host,
             hostname,
@@ -7960,7 +7960,7 @@ var require_client = __commonJS({
             if (err) {
               reject(err);
             } else {
-              resolve2(socket2);
+              resolve3(socket2);
             }
           });
         });
@@ -8296,8 +8296,8 @@ var require_pool_base = __commonJS({
         if (this[kQueue].isEmpty()) {
           await Promise.all(this[kClients].map((c) => c.close()));
         } else {
-          await new Promise((resolve2) => {
-            this[kClosedResolve] = resolve2;
+          await new Promise((resolve3) => {
+            this[kClosedResolve] = resolve3;
           });
         }
       }
@@ -9566,7 +9566,7 @@ var require_readable = __commonJS({
         if (this._readableState.closeEmitted) {
           return null;
         }
-        return await new Promise((resolve2, reject) => {
+        return await new Promise((resolve3, reject) => {
           if (this[kContentLength] > limit) {
             this.destroy(new AbortError());
           }
@@ -9579,7 +9579,7 @@ var require_readable = __commonJS({
             if (signal?.aborted) {
               reject(signal.reason ?? new AbortError());
             } else {
-              resolve2(null);
+              resolve3(null);
             }
           }).on("error", noop).on("data", function(chunk) {
             limit -= chunk.length;
@@ -9598,7 +9598,7 @@ var require_readable = __commonJS({
     }
     async function consume(stream2, type) {
       assert(!stream2[kConsume]);
-      return new Promise((resolve2, reject) => {
+      return new Promise((resolve3, reject) => {
         if (isUnusable(stream2)) {
           const rState = stream2._readableState;
           if (rState.destroyed && rState.closeEmitted === false) {
@@ -9615,7 +9615,7 @@ var require_readable = __commonJS({
             stream2[kConsume] = {
               type,
               stream: stream2,
-              resolve: resolve2,
+              resolve: resolve3,
               reject,
               length: 0,
               body: []
@@ -9685,18 +9685,18 @@ var require_readable = __commonJS({
       return buffer;
     }
     function consumeEnd(consume2) {
-      const { type, body, resolve: resolve2, stream: stream2, length } = consume2;
+      const { type, body, resolve: resolve3, stream: stream2, length } = consume2;
       try {
         if (type === "text") {
-          resolve2(chunksDecode(body, length));
+          resolve3(chunksDecode(body, length));
         } else if (type === "json") {
-          resolve2(JSON.parse(chunksDecode(body, length)));
+          resolve3(JSON.parse(chunksDecode(body, length)));
         } else if (type === "arrayBuffer") {
-          resolve2(chunksConcat(body, length).buffer);
+          resolve3(chunksConcat(body, length).buffer);
         } else if (type === "blob") {
-          resolve2(new Blob(body, { type: stream2[kContentType] }));
+          resolve3(new Blob(body, { type: stream2[kContentType] }));
         } else if (type === "bytes") {
-          resolve2(chunksConcat(body, length));
+          resolve3(chunksConcat(body, length));
         }
         consumeFinish(consume2);
       } catch (err) {
@@ -9953,9 +9953,9 @@ var require_api_request = __commonJS({
     };
     function request(opts, callback) {
       if (callback === void 0) {
-        return new Promise((resolve2, reject) => {
+        return new Promise((resolve3, reject) => {
           request.call(this, opts, (err, data) => {
-            return err ? reject(err) : resolve2(data);
+            return err ? reject(err) : resolve3(data);
           });
         });
       }
@@ -10178,9 +10178,9 @@ var require_api_stream = __commonJS({
     };
     function stream2(opts, factory, callback) {
       if (callback === void 0) {
-        return new Promise((resolve2, reject) => {
+        return new Promise((resolve3, reject) => {
           stream2.call(this, opts, factory, (err, data) => {
-            return err ? reject(err) : resolve2(data);
+            return err ? reject(err) : resolve3(data);
           });
         });
       }
@@ -10385,7 +10385,7 @@ var require_api_pipeline = __commonJS({
         util2.destroy(ret, err);
       }
     };
-    function pipeline2(opts, handler) {
+    function pipeline3(opts, handler) {
       try {
         const pipelineHandler = new PipelineHandler(opts, handler);
         this.dispatch({ ...opts, body: pipelineHandler.req }, pipelineHandler);
@@ -10394,7 +10394,7 @@ var require_api_pipeline = __commonJS({
         return new PassThrough().destroy(err);
       }
     }
-    module2.exports = pipeline2;
+    module2.exports = pipeline3;
   }
 });
 
@@ -10465,9 +10465,9 @@ var require_api_upgrade = __commonJS({
     };
     function upgrade(opts, callback) {
       if (callback === void 0) {
-        return new Promise((resolve2, reject) => {
+        return new Promise((resolve3, reject) => {
           upgrade.call(this, opts, (err, data) => {
-            return err ? reject(err) : resolve2(data);
+            return err ? reject(err) : resolve3(data);
           });
         });
       }
@@ -10559,9 +10559,9 @@ var require_api_connect = __commonJS({
     };
     function connect(opts, callback) {
       if (callback === void 0) {
-        return new Promise((resolve2, reject) => {
+        return new Promise((resolve3, reject) => {
           connect.call(this, opts, (err, data) => {
-            return err ? reject(err) : resolve2(data);
+            return err ? reject(err) : resolve3(data);
           });
         });
       }
@@ -13512,7 +13512,7 @@ var require_fetch = __commonJS({
     } = require_response();
     var { HeadersList } = require_headers();
     var { Request, cloneRequest } = require_request2();
-    var zlib = require("node:zlib");
+    var zlib2 = require("node:zlib");
     var {
       bytesMatch,
       makePolicyContainer,
@@ -13559,7 +13559,7 @@ var require_fetch = __commonJS({
       subresourceSet
     } = require_constants3();
     var EE = require("node:events");
-    var { Readable, pipeline: pipeline2, finished } = require("node:stream");
+    var { Readable, pipeline: pipeline3, finished } = require("node:stream");
     var { addAbortListener, isErrored, isReadable, bufferToLowerCasedHeaderName } = require_util();
     var { dataURLProcessor, serializeAMimeType, minimizeSupportedMimeType } = require_data_url();
     var { getGlobalDispatcher } = require_global2();
@@ -14424,7 +14424,7 @@ var require_fetch = __commonJS({
       function dispatch({ body }) {
         const url = requestCurrentURL(request);
         const agent = fetchParams.controller.dispatcher;
-        return new Promise((resolve2, reject) => agent.dispatch(
+        return new Promise((resolve3, reject) => agent.dispatch(
           {
             path: url.pathname + url.search,
             origin: url.origin,
@@ -14474,23 +14474,23 @@ var require_fetch = __commonJS({
                 for (let i = codings.length - 1; i >= 0; --i) {
                   const coding = codings[i].trim();
                   if (coding === "x-gzip" || coding === "gzip") {
-                    decoders.push(zlib.createGunzip({
+                    decoders.push(zlib2.createGunzip({
                       // Be less strict when decoding compressed responses, since sometimes
                       // servers send slightly invalid responses that are still accepted
                       // by common browsers.
                       // Always using Z_SYNC_FLUSH is what cURL does.
-                      flush: zlib.constants.Z_SYNC_FLUSH,
-                      finishFlush: zlib.constants.Z_SYNC_FLUSH
+                      flush: zlib2.constants.Z_SYNC_FLUSH,
+                      finishFlush: zlib2.constants.Z_SYNC_FLUSH
                     }));
                   } else if (coding === "deflate") {
                     decoders.push(createInflate({
-                      flush: zlib.constants.Z_SYNC_FLUSH,
-                      finishFlush: zlib.constants.Z_SYNC_FLUSH
+                      flush: zlib2.constants.Z_SYNC_FLUSH,
+                      finishFlush: zlib2.constants.Z_SYNC_FLUSH
                     }));
                   } else if (coding === "br") {
-                    decoders.push(zlib.createBrotliDecompress({
-                      flush: zlib.constants.BROTLI_OPERATION_FLUSH,
-                      finishFlush: zlib.constants.BROTLI_OPERATION_FLUSH
+                    decoders.push(zlib2.createBrotliDecompress({
+                      flush: zlib2.constants.BROTLI_OPERATION_FLUSH,
+                      finishFlush: zlib2.constants.BROTLI_OPERATION_FLUSH
                     }));
                   } else {
                     decoders.length = 0;
@@ -14500,11 +14500,11 @@ var require_fetch = __commonJS({
               }
               this.body = new Readable({ read: resume });
               const onError = this.onError.bind(this);
-              resolve2({
+              resolve3({
                 status,
                 statusText,
                 headersList,
-                body: decoders.length ? pipeline2(this.body, ...decoders, (err) => {
+                body: decoders.length ? pipeline3(this.body, ...decoders, (err) => {
                   if (err) {
                     this.onError(err);
                   }
@@ -14543,7 +14543,7 @@ var require_fetch = __commonJS({
               for (let i = 0; i < rawHeaders.length; i += 2) {
                 headersList.append(bufferToLowerCasedHeaderName(rawHeaders[i]), rawHeaders[i + 1].toString("latin1"), true);
               }
-              resolve2({
+              resolve3({
                 status,
                 statusText: STATUS_CODES[status],
                 headersList,
@@ -17077,13 +17077,13 @@ var require_frame = __commonJS({
     "use strict";
     var { maxUnsigned16Bit } = require_constants5();
     var BUFFER_SIZE = 16386;
-    var crypto3;
+    var crypto4;
     var buffer = null;
     var bufIdx = BUFFER_SIZE;
     try {
-      crypto3 = require("node:crypto");
+      crypto4 = require("node:crypto");
     } catch {
-      crypto3 = {
+      crypto4 = {
         // not full compatibility, but minimum.
         randomFillSync: function randomFillSync(buffer2, _offset, _size) {
           for (let i = 0; i < buffer2.length; ++i) {
@@ -17096,7 +17096,7 @@ var require_frame = __commonJS({
     function generateMask() {
       if (bufIdx === BUFFER_SIZE) {
         bufIdx = 0;
-        crypto3.randomFillSync(buffer ??= Buffer.allocUnsafe(BUFFER_SIZE), 0, BUFFER_SIZE);
+        crypto4.randomFillSync(buffer ??= Buffer.allocUnsafe(BUFFER_SIZE), 0, BUFFER_SIZE);
       }
       return [buffer[bufIdx++], buffer[bufIdx++], buffer[bufIdx++], buffer[bufIdx++]];
     }
@@ -17168,9 +17168,9 @@ var require_connection = __commonJS({
     var { Headers: Headers2, getHeadersList } = require_headers();
     var { getDecodeSplit } = require_util2();
     var { WebsocketFrameSend } = require_frame();
-    var crypto3;
+    var crypto4;
     try {
-      crypto3 = require("node:crypto");
+      crypto4 = require("node:crypto");
     } catch {
     }
     function establishWebSocketConnection(url, protocols, client, ws, onEstablish, options) {
@@ -17190,7 +17190,7 @@ var require_connection = __commonJS({
         const headersList = getHeadersList(new Headers2(options.headers));
         request.headersList = headersList;
       }
-      const keyValue = crypto3.randomBytes(16).toString("base64");
+      const keyValue = crypto4.randomBytes(16).toString("base64");
       request.headersList.append("sec-websocket-key", keyValue);
       request.headersList.append("sec-websocket-version", "13");
       for (const protocol of protocols) {
@@ -17220,7 +17220,7 @@ var require_connection = __commonJS({
             return;
           }
           const secWSAccept = response.headersList.get("Sec-WebSocket-Accept");
-          const digest = crypto3.createHash("sha1").update(keyValue + uid).digest("base64");
+          const digest = crypto4.createHash("sha1").update(keyValue + uid).digest("base64");
           if (secWSAccept !== digest) {
             failWebsocketConnection(ws, "Incorrect hash received in Sec-WebSocket-Accept header.");
             return;
@@ -18284,8 +18284,8 @@ var require_util8 = __commonJS({
       return true;
     }
     function delay(ms) {
-      return new Promise((resolve2) => {
-        setTimeout(resolve2, ms).unref();
+      return new Promise((resolve3) => {
+        setTimeout(resolve3, ms).unref();
       });
     }
     module2.exports = {
@@ -18705,7 +18705,7 @@ ${value}`;
 var require_eventsource = __commonJS({
   "node_modules/undici/lib/web/eventsource/eventsource.js"(exports2, module2) {
     "use strict";
-    var { pipeline: pipeline2 } = require("node:stream");
+    var { pipeline: pipeline3 } = require("node:stream");
     var { fetching } = require_fetch();
     var { makeRequest } = require_request2();
     var { webidl } = require_webidl();
@@ -18865,7 +18865,7 @@ var require_eventsource = __commonJS({
               ));
             }
           });
-          pipeline2(
+          pipeline3(
             response.body.stream,
             eventSourceStream,
             (error2) => {
@@ -21213,11 +21213,11 @@ var fs = __toESM(require("fs"), 1);
 var path = __toESM(require("path"), 1);
 var __awaiter = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve2) {
-      resolve2(value);
+    return value instanceof P ? value : new P(function(resolve3) {
+      resolve3(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve2, reject) {
+  return new (P || (P = Promise))(function(resolve3, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -21233,7 +21233,7 @@ var __awaiter = function(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -21346,11 +21346,11 @@ function isUnixExecutable(stats) {
 // node_modules/@actions/io/lib/io.js
 var __awaiter2 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve2) {
-      resolve2(value);
+    return value instanceof P ? value : new P(function(resolve3) {
+      resolve3(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve2, reject) {
+  return new (P || (P = Promise))(function(resolve3, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -21366,7 +21366,7 @@ var __awaiter2 = function(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -21536,11 +21536,11 @@ function copyFile2(srcFile, destFile, force) {
 var import_timers = require("timers");
 var __awaiter3 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve2) {
-      resolve2(value);
+    return value instanceof P ? value : new P(function(resolve3) {
+      resolve3(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve2, reject) {
+  return new (P || (P = Promise))(function(resolve3, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -21556,7 +21556,7 @@ var __awaiter3 = function(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -21775,7 +21775,7 @@ var ToolRunner = class extends events.EventEmitter {
         this.toolPath = path3.resolve(process.cwd(), this.options.cwd || process.cwd(), this.toolPath);
       }
       this.toolPath = yield which(this.toolPath, true);
-      return new Promise((resolve2, reject) => __awaiter3(this, void 0, void 0, function* () {
+      return new Promise((resolve3, reject) => __awaiter3(this, void 0, void 0, function* () {
         this._debug(`exec tool: ${this.toolPath}`);
         this._debug("arguments:");
         for (const arg of this.args) {
@@ -21858,7 +21858,7 @@ var ToolRunner = class extends events.EventEmitter {
           if (error2) {
             reject(error2);
           } else {
-            resolve2(exitCode);
+            resolve3(exitCode);
           }
         });
         if (this.options.input) {
@@ -21981,11 +21981,11 @@ var ExecState = class _ExecState extends events.EventEmitter {
 // node_modules/@actions/exec/lib/exec.js
 var __awaiter4 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve2) {
-      resolve2(value);
+    return value instanceof P ? value : new P(function(resolve3) {
+      resolve3(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve2, reject) {
+  return new (P || (P = Promise))(function(resolve3, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -22001,7 +22001,7 @@ var __awaiter4 = function(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -22207,11 +22207,11 @@ var tunnel = __toESM(require_tunnel2(), 1);
 var import_undici = __toESM(require_undici(), 1);
 var __awaiter5 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve2) {
-      resolve2(value);
+    return value instanceof P ? value : new P(function(resolve3) {
+      resolve3(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve2, reject) {
+  return new (P || (P = Promise))(function(resolve3, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -22227,7 +22227,7 @@ var __awaiter5 = function(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -22300,26 +22300,26 @@ var HttpClientResponse = class {
   }
   readBody() {
     return __awaiter5(this, void 0, void 0, function* () {
-      return new Promise((resolve2) => __awaiter5(this, void 0, void 0, function* () {
+      return new Promise((resolve3) => __awaiter5(this, void 0, void 0, function* () {
         let output = Buffer.alloc(0);
         this.message.on("data", (chunk) => {
           output = Buffer.concat([output, chunk]);
         });
         this.message.on("end", () => {
-          resolve2(output.toString());
+          resolve3(output.toString());
         });
       }));
     });
   }
   readBodyBuffer() {
     return __awaiter5(this, void 0, void 0, function* () {
-      return new Promise((resolve2) => __awaiter5(this, void 0, void 0, function* () {
+      return new Promise((resolve3) => __awaiter5(this, void 0, void 0, function* () {
         const chunks = [];
         this.message.on("data", (chunk) => {
           chunks.push(chunk);
         });
         this.message.on("end", () => {
-          resolve2(Buffer.concat(chunks));
+          resolve3(Buffer.concat(chunks));
         });
       }));
     });
@@ -22522,14 +22522,14 @@ var HttpClient = class {
    */
   requestRaw(info2, data) {
     return __awaiter5(this, void 0, void 0, function* () {
-      return new Promise((resolve2, reject) => {
+      return new Promise((resolve3, reject) => {
         function callbackForResult(err, res) {
           if (err) {
             reject(err);
           } else if (!res) {
             reject(new Error("Unknown error"));
           } else {
-            resolve2(res);
+            resolve3(res);
           }
         }
         this.requestRawWithCallback(info2, data, callbackForResult);
@@ -22773,12 +22773,12 @@ var HttpClient = class {
     return __awaiter5(this, void 0, void 0, function* () {
       retryNumber = Math.min(ExponentialBackoffCeiling, retryNumber);
       const ms = ExponentialBackoffTimeSlice * Math.pow(2, retryNumber);
-      return new Promise((resolve2) => setTimeout(() => resolve2(), ms));
+      return new Promise((resolve3) => setTimeout(() => resolve3(), ms));
     });
   }
   _processResponse(res, options) {
     return __awaiter5(this, void 0, void 0, function* () {
-      return new Promise((resolve2, reject) => __awaiter5(this, void 0, void 0, function* () {
+      return new Promise((resolve3, reject) => __awaiter5(this, void 0, void 0, function* () {
         const statusCode = res.message.statusCode || 0;
         const response = {
           statusCode,
@@ -22786,7 +22786,7 @@ var HttpClient = class {
           headers: {}
         };
         if (statusCode === HttpCodes.NotFound) {
-          resolve2(response);
+          resolve3(response);
         }
         function dateTimeDeserializer(key, value) {
           if (typeof value === "string") {
@@ -22825,7 +22825,7 @@ var HttpClient = class {
           err.result = response.result;
           reject(err);
         } else {
-          resolve2(response);
+          resolve3(response);
         }
       }));
     });
@@ -22838,11 +22838,11 @@ var import_os = require("os");
 var import_fs = require("fs");
 var __awaiter6 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve2) {
-      resolve2(value);
+    return value instanceof P ? value : new P(function(resolve3) {
+      resolve3(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve2, reject) {
+  return new (P || (P = Promise))(function(resolve3, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -22858,7 +22858,7 @@ var __awaiter6 = function(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -23125,11 +23125,11 @@ var arch = import_os2.default.arch();
 // node_modules/@actions/core/lib/core.js
 var __awaiter7 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve2) {
-      resolve2(value);
+    return value instanceof P ? value : new P(function(resolve3) {
+      resolve3(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve2, reject) {
+  return new (P || (P = Promise))(function(resolve3, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -23145,7 +23145,7 @@ var __awaiter7 = function(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -23206,6 +23206,9 @@ function setFailed(message) {
   process.exitCode = ExitCode.Failure;
   error(message);
 }
+function isDebug() {
+  return process.env["RUNNER_DEBUG"] === "1";
+}
 function debug(message) {
   issueCommand("debug", {}, message);
 }
@@ -23238,6 +23241,7 @@ function group(name, fn) {
 }
 
 // src/main.ts
+var crypto3 = __toESM(require("crypto"));
 var fs4 = __toESM(require("fs"));
 var os7 = __toESM(require("os"));
 var path6 = __toESM(require("path"));
@@ -23260,11 +23264,11 @@ var import_assert2 = require("assert");
 // node_modules/@actions/tool-cache/lib/retry-helper.js
 var __awaiter8 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve2) {
-      resolve2(value);
+    return value instanceof P ? value : new P(function(resolve3) {
+      resolve3(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve2, reject) {
+  return new (P || (P = Promise))(function(resolve3, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -23280,7 +23284,7 @@ var __awaiter8 = function(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -23322,7 +23326,7 @@ var RetryHelper = class {
   }
   sleep(seconds) {
     return __awaiter8(this, void 0, void 0, function* () {
-      return new Promise((resolve2) => setTimeout(resolve2, seconds * 1e3));
+      return new Promise((resolve3) => setTimeout(resolve3, seconds * 1e3));
     });
   }
 };
@@ -23330,11 +23334,11 @@ var RetryHelper = class {
 // node_modules/@actions/tool-cache/lib/tool-cache.js
 var __awaiter9 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve2) {
-      resolve2(value);
+    return value instanceof P ? value : new P(function(resolve3) {
+      resolve3(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve2, reject) {
+  return new (P || (P = Promise))(function(resolve3, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -23350,7 +23354,7 @@ var __awaiter9 = function(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -23408,12 +23412,12 @@ function downloadToolAttempt(url, dest, auth, headers) {
       debug(`Failed to download from "${url}". Code(${response.message.statusCode}) Message(${response.message.statusMessage})`);
       throw err;
     }
-    const pipeline2 = util.promisify(stream.pipeline);
+    const pipeline3 = util.promisify(stream.pipeline);
     const responseMessageFactory = _getGlobal("TEST_DOWNLOAD_TOOL_RESPONSE_MESSAGE_FACTORY", () => response.message);
     const readStream = responseMessageFactory();
     let succeeded = false;
     try {
-      yield pipeline2(readStream, fs3.createWriteStream(dest));
+      yield pipeline3(readStream, fs3.createWriteStream(dest));
       debug("download complete");
       succeeded = true;
       return dest;
@@ -23427,6 +23431,77 @@ function downloadToolAttempt(url, dest, auth, headers) {
         }
       }
     }
+  });
+}
+function extractZip(file, dest) {
+  return __awaiter9(this, void 0, void 0, function* () {
+    if (!file) {
+      throw new Error("parameter 'file' is required");
+    }
+    dest = yield _createExtractFolder(dest);
+    if (IS_WINDOWS3) {
+      yield extractZipWin(file, dest);
+    } else {
+      yield extractZipNix(file, dest);
+    }
+    return dest;
+  });
+}
+function extractZipWin(file, dest) {
+  return __awaiter9(this, void 0, void 0, function* () {
+    const escapedFile = file.replace(/'/g, "''").replace(/"|\n|\r/g, "");
+    const escapedDest = dest.replace(/'/g, "''").replace(/"|\n|\r/g, "");
+    const pwshPath = yield which("pwsh", false);
+    if (pwshPath) {
+      const pwshCommand = [
+        `$ErrorActionPreference = 'Stop' ;`,
+        `try { Add-Type -AssemblyName System.IO.Compression.ZipFile } catch { } ;`,
+        `try { [System.IO.Compression.ZipFile]::ExtractToDirectory('${escapedFile}', '${escapedDest}', $true) }`,
+        `catch { if (($_.Exception.GetType().FullName -eq 'System.Management.Automation.MethodException') -or ($_.Exception.GetType().FullName -eq 'System.Management.Automation.RuntimeException') ){ Expand-Archive -LiteralPath '${escapedFile}' -DestinationPath '${escapedDest}' -Force } else { throw $_ } } ;`
+      ].join(" ");
+      const args = [
+        "-NoLogo",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Unrestricted",
+        "-Command",
+        pwshCommand
+      ];
+      debug(`Using pwsh at path: ${pwshPath}`);
+      yield exec(`"${pwshPath}"`, args);
+    } else {
+      const powershellCommand = [
+        `$ErrorActionPreference = 'Stop' ;`,
+        `try { Add-Type -AssemblyName System.IO.Compression.FileSystem } catch { } ;`,
+        `if ((Get-Command -Name Expand-Archive -Module Microsoft.PowerShell.Archive -ErrorAction Ignore)) { Expand-Archive -LiteralPath '${escapedFile}' -DestinationPath '${escapedDest}' -Force }`,
+        `else {[System.IO.Compression.ZipFile]::ExtractToDirectory('${escapedFile}', '${escapedDest}', $true) }`
+      ].join(" ");
+      const args = [
+        "-NoLogo",
+        "-Sta",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Unrestricted",
+        "-Command",
+        powershellCommand
+      ];
+      const powershellPath = yield which("powershell", true);
+      debug(`Using powershell at path: ${powershellPath}`);
+      yield exec(`"${powershellPath}"`, args);
+    }
+  });
+}
+function extractZipNix(file, dest) {
+  return __awaiter9(this, void 0, void 0, function* () {
+    const unzipPath = yield which("unzip", true);
+    const args = [file];
+    if (!isDebug()) {
+      args.unshift("-q");
+    }
+    args.unshift("-o");
+    yield exec(`"${unzipPath}"`, args, { cwd: dest });
   });
 }
 function cacheDir(sourceDir, tool, version, arch3) {
@@ -23508,6 +23583,15 @@ function findAllVersions(toolName, arch3) {
   }
   return versions;
 }
+function _createExtractFolder(dest) {
+  return __awaiter9(this, void 0, void 0, function* () {
+    if (!dest) {
+      dest = path5.join(_getTempDirectory(), crypto2.randomUUID());
+    }
+    yield mkdirP(dest);
+    return dest;
+  });
+}
 function _createToolPath(tool, version, arch3) {
   return __awaiter9(this, void 0, void 0, function* () {
     const folderPath = path5.join(_getCacheDirectory(), tool, semver2.clean(version) || version, arch3 || "");
@@ -23572,8 +23656,39 @@ function _getGlobal(key, defaultValue) {
 }
 
 // src/main.ts
+var zlib = __toESM(require("zlib"));
+var import_promises = require("stream/promises");
 var import_compare_versions = __toESM(require_umd());
+
+// src/checksums.json
+var checksums_default = {
+  "2.1.26": {
+    coursier: "eb0c35379e76f44404f777ab0a2335ca5326f6b7721b8cdfa873e87bd9f4ac0c",
+    "coursier.bat": "15d724d5f083032a269126fb007196dc03c8a1a783c1fd270647393fe9a22b6f",
+    "coursier.jar": "d3135830850eddfb9998be66ab4c79478ee6cff56012bb5a177532b1df47c7cc",
+    "cs-aarch64-apple-darwin-sdk.zip": "4e19b55f75f1e051ded0a7aa33bd84ea70e1ac902fe8bbe267e60be6d17850e7",
+    "cs-aarch64-apple-darwin.gz": "8e4d36aa2565276f262af073f0999399e4c2f920f2fe436bb0ae67665eb505e9",
+    "cs-aarch64-pc-linux-container.gz": "5408497d21a728d02333d455f79cc8e445f863adef4fcc75b8ece955fc3ac1e8",
+    "cs-aarch64-pc-linux-sdk.zip": "44f483353644c43484c77f479cb7f6810bf35d11032ff88588a5e2abcf06c105",
+    "cs-aarch64-pc-linux-static.gz": "a7467de3bdd902a827a3f4439b0ca9d800e67b4894d94895c6e01d8666633d7d",
+    "cs-aarch64-pc-linux.gz": "6c358ac223332c8981eb86417d3faf9338a5ef6c95d1879a58162b24c510025c",
+    "cs-aarch64-pc-win32-jvm.zip": "b21c3c25883f1ba34bc560ba3d86cb98a7edbbf5c11768f8d68665f9ec57da3f",
+    "cs-x86_64-apple-darwin-sdk.zip": "1f2770efbe9a934a0b1a7a7d9bb7da8fb450d184e97822ed9d4b575d7999dab6",
+    "cs-x86_64-apple-darwin.gz": "c8045f36fadec075c8647b979d1028435935b0ecd43efa1387cd286c3926a421",
+    "cs-x86_64-pc-linux-compat.gz": "9e98d023b5ff497c566ea47dbd820afebbf05f90e521805c1eb2a79b331809a5",
+    "cs-x86_64-pc-linux-container.gz": "915691ae24b5cd23dc7386f3c4b35ab5a2e36305ec3d5a95d4a0140f0d137a42",
+    "cs-x86_64-pc-linux-jvm.tar.gz": "ce518f165d0624219534c81e9f9a1ca60b62cf1b4f0edc18481b22df2096a165",
+    "cs-x86_64-pc-linux-sdk.zip": "d4edbf89acb78880b1d08fbce33d46b916b9137f9da8ff5ec4835ff18eaeae62",
+    "cs-x86_64-pc-linux-static.gz": "21021ff6689637bd0fce276c91171aabe67c70c72a3c805e6daddbc9ca58f6c4",
+    "cs-x86_64-pc-linux.gz": "348e37bc2a8c706640e6b032c4551a0e055a7f1537485b4a91540e9d3598ec6d",
+    "cs-x86_64-pc-win32-sdk.zip": "63358aca14fc8fdf30cb7838dcbde8e2cbd6f0df9f4bc13af4e708790d66f57e",
+    "cs-x86_64-pc-win32.zip": "d23f4ba6afa7f092135b485303b0a020358fbb314abf9c6dc2576df3e2abd941"
+  }
+};
+
+// src/main.ts
 var defaultVersion = "2.1.26";
+var pinnedChecksums = checksums_default;
 function splitMilestone(version) {
   const match = /^(.+)-M(\d+)$/.exec(version);
   return match ? [match[1], parseInt(match[2], 10)] : [version, Number.MAX_SAFE_INTEGER];
@@ -23590,10 +23705,6 @@ function getReleaseTag(version) {
 function useVirtusLabRepo(version, platform2, arch3) {
   return version !== "nightly" && arch3 === "arm64" && (platform2 == "darwin" && compareCoursierVersions(version, "2.1.16") < 0 || platform2 == "linux" && compareCoursierVersions(version, "2.1.25-M3") < 0);
 }
-var csVersion = getInput("version") || defaultVersion;
-var releaseTag = getReleaseTag(csVersion);
-var resolvedLauncher;
-var warnedAboutUseContainerImage = false;
 function getCoursierArchitecture(arch3) {
   if (arch3 === "x64") {
     return "x86_64";
@@ -23618,6 +23729,41 @@ async function execOutput(cmd, args, env) {
   await exec(cmd, args.filter(Boolean), options);
   return output.trim();
 }
+async function sha256(filePath) {
+  const hash = crypto3.createHash("sha256");
+  for await (const chunk of fs4.createReadStream(filePath)) {
+    hash.update(chunk);
+  }
+  return hash.digest("hex");
+}
+function checkChecksumRequirement(version, required, checksums = pinnedChecksums) {
+  if (required && !checksums[version]) {
+    const pinned = Object.keys(checksums).join(", ");
+    throw new Error(
+      `requireChecksum is enabled, but there are no pinned checksums for Coursier ${version} (pinned versions: ${pinned}). Use one of those versions, or leave version empty to use the default one.`
+    );
+  }
+}
+async function downloadVerified(url, csVersion) {
+  console.log(`Downloading ${url}`);
+  const filePath = await downloadTool(url);
+  const asset = url.slice(url.lastIndexOf("/") + 1);
+  const versionChecksums = pinnedChecksums[csVersion];
+  if (!versionChecksums) {
+    info(`No pinned checksums for Coursier ${csVersion}, not verifying ${asset}`);
+    return filePath;
+  }
+  const expected = versionChecksums[asset];
+  const actual = await sha256(filePath);
+  if (actual !== expected) {
+    fs4.rmSync(filePath, { force: true });
+    throw new Error(
+      expected ? `Checksum mismatch for ${url}: expected SHA-256 ${expected}, got ${actual}` : `No pinned checksum for ${asset} of Coursier ${csVersion}`
+    );
+  }
+  info(`Verified SHA-256 of ${asset}`);
+  return filePath;
+}
 function validateLauncher(name, input) {
   const value = input.trim();
   if (value && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(value)) {
@@ -23628,12 +23774,50 @@ function validateLauncher(name, input) {
 function launcherInput(name) {
   return validateLauncher(name, getInput(name));
 }
-async function downloadJvmCoursier(launcherType) {
-  const baseUrl = `https://github.com/coursier/coursier/releases/download/${releaseTag}`;
+function readConfig() {
+  const csVersion = getInput("version") || defaultVersion;
+  const releaseTag = getReleaseTag(csVersion);
+  const requiredLauncher = launcherInput("launcher");
+  const preferredLauncher = launcherInput("preferredLauncher");
+  const normalizedLauncher = requiredLauncher.toLowerCase();
+  const normalizedPreferredLauncher = preferredLauncher.toLowerCase();
+  const jvmLaunchers = ["thin", "jvm", "assembly"];
+  if (jvmLaunchers.includes(normalizedPreferredLauncher)) {
+    throw new Error(
+      `preferredLauncher only accepts native launcher flavors; use launcher for the JVM launcher "${preferredLauncher}"`
+    );
+  }
+  if (requiredLauncher && preferredLauncher) {
+    throw new Error("launcher and preferredLauncher cannot both be set");
+  }
+  const useContainerImage = getBooleanInput("useContainerImage");
+  if (useContainerImage) {
+    warning("useContainerImage is deprecated; use launcher: container instead");
+  }
+  const jvmLauncherType = jvmLaunchers.includes(normalizedLauncher) ? normalizedLauncher === "assembly" ? "assembly" : "thin" : void 0;
+  const nativeLauncher = requiredLauncher || preferredLauncher || (useContainerImage ? "container" : "");
+  const extraJvmArgs = parseExtraJvmArgs(getInput("extraJvmArgs"));
+  const disableDefaultRepos = getBooleanInput("disableDefaultRepos");
+  const customRepositoryInput = getInput("customRepositories");
+  const customRepositories = customRepositoryInput ? customRepositoryInput.split("|").map((repo) => repo.trim()) : [];
+  const requireChecksum = getBooleanInput("requireChecksum");
+  return {
+    csVersion,
+    releaseTag,
+    jvmLauncherType,
+    nativeLauncher,
+    preferredLauncher,
+    extraJvmArgs,
+    disableDefaultRepos,
+    customRepositories,
+    requireChecksum
+  };
+}
+async function downloadJvmCoursier(config, launcherType) {
+  const baseUrl = `https://github.com/coursier/coursier/releases/download/${config.releaseTag}`;
   if (launcherType === "assembly") {
     const url2 = `${baseUrl}/coursier.jar`;
-    console.log(`Downloading ${url2}`);
-    const jarDownloaded = await downloadTool(url2);
+    const jarDownloaded = await downloadVerified(url2, config.csVersion);
     const tempDir2 = fs4.mkdtempSync(path6.join(os7.tmpdir(), "cs-assembly-"));
     fs4.copyFileSync(jarDownloaded, path6.join(tempDir2, "coursier.jar"));
     if (process.platform === "win32") {
@@ -23652,10 +23836,9 @@ async function downloadJvmCoursier(launcherType) {
     return { path: tempDir2, isDir: true };
   }
   const url = `${baseUrl}/coursier`;
-  console.log(`Downloading ${url}`);
-  const filePath = await downloadTool(url);
+  const filePath = await downloadVerified(url, config.csVersion);
   if (process.platform !== "win32") {
-    await exec("chmod", ["+x", filePath]);
+    fs4.chmodSync(filePath, 493);
     return { path: filePath, isDir: false };
   }
   const tempDir = fs4.mkdtempSync(path6.join(os7.tmpdir(), "cs-thin-"));
@@ -23663,21 +23846,21 @@ async function downloadJvmCoursier(launcherType) {
   fs4.writeFileSync(path6.join(tempDir, "cs.bat"), '@echo off\njava -jar "%~dp0coursier" %*\n');
   return { path: tempDir, isDir: true };
 }
-async function installJvmCoursier(launcherType) {
+async function installJvmCoursier(config, launcherType) {
   const toolName = `cs-${launcherType}`;
-  const previous = find(toolName, csVersion);
+  const previous = find(toolName, config.csVersion);
   if (previous) {
     addPath(previous);
     return previous;
   }
-  const { path: binaryPath, isDir } = await downloadJvmCoursier(launcherType);
+  const { path: binaryPath, isDir } = await downloadJvmCoursier(config, launcherType);
   if (!isDir) {
-    const csCached = await cacheFile(binaryPath, "cs", toolName, csVersion);
+    const csCached = await cacheFile(binaryPath, "cs", toolName, config.csVersion);
     addPath(csCached);
     return csCached;
   }
   try {
-    const csCached = await cacheDir(binaryPath, toolName, csVersion);
+    const csCached = await cacheDir(binaryPath, toolName, config.csVersion);
     addPath(csCached);
     return csCached;
   } finally {
@@ -23699,58 +23882,90 @@ function coursierDownloadUrl(version, platform2, arch3, launcher) {
       throw new Error(`Unknown process.platform: ${platform2}`);
   }
 }
-async function downloadCoursier(launcher) {
+async function downloadCoursier(config, launcher) {
   const architecture = getCoursierArchitecture(process.arch);
   const effectiveLauncher = launcher !== "" ? launcher : process.platform === "win32" && process.arch === "arm64" ? "jvm" : "";
   const isWindowsJvmPackagedLauncher = process.platform === "win32" && process.arch === "arm64" && effectiveLauncher === "jvm";
   let csBinary = "";
   switch (process.platform) {
     case "linux": {
-      const url = coursierDownloadUrl(csVersion, process.platform, process.arch, effectiveLauncher);
-      console.log(`Downloading ${url}`);
-      const guid = await downloadTool(url);
-      const archive = `${guid}.gz`;
-      await exec("mv", [guid, archive]);
-      csBinary = archive;
+      const url = coursierDownloadUrl(
+        config.csVersion,
+        process.platform,
+        process.arch,
+        effectiveLauncher
+      );
+      const archive = await downloadVerified(url, config.csVersion);
+      csBinary = await gunzip(archive);
       break;
     }
     case "darwin": {
-      const url = coursierDownloadUrl(csVersion, process.platform, process.arch, effectiveLauncher);
-      console.log(`Downloading ${url}`);
-      const guid = await downloadTool(url);
-      const archive = `${guid}.gz`;
-      await exec("mv", [guid, archive]);
-      csBinary = archive;
+      const url = coursierDownloadUrl(
+        config.csVersion,
+        process.platform,
+        process.arch,
+        effectiveLauncher
+      );
+      const archive = await downloadVerified(url, config.csVersion);
+      csBinary = await gunzip(archive);
       break;
     }
     case "win32": {
-      const url = coursierDownloadUrl(csVersion, process.platform, process.arch, effectiveLauncher);
-      console.log(`Downloading ${url}`);
-      const guid = await downloadTool(url);
+      const url = coursierDownloadUrl(
+        config.csVersion,
+        process.platform,
+        process.arch,
+        effectiveLauncher
+      );
+      const guid = await downloadVerified(url, config.csVersion);
       const archive = `${guid}.zip`;
-      await exec("mv", [guid, archive]);
-      csBinary = archive;
+      fs4.renameSync(guid, archive);
+      const destDir = await extractZip(archive, guid);
+      if (isWindowsJvmPackagedLauncher) {
+        return { path: destDir, isDir: true };
+      }
+      const exeName = `cs-${architecture}-pc-win32.exe`;
+      const exe = fs4.readdirSync(destDir, { recursive: true, encoding: "utf8" }).find((entry) => path6.basename(entry) === exeName);
+      if (!exe) throw new Error(`${exeName} not found in ${url}`);
+      csBinary = path6.join(destDir, exe);
       break;
     }
     default:
-      setFailed(`Unknown process.platform: ${process.platform}`);
+      throw new Error(
+        `Unsupported platform: ${process.platform} (supported platforms: linux, darwin, win32)`
+      );
   }
-  if (!csBinary) setFailed(`Couldn't download Coursier`);
-  if (csBinary.endsWith(".gz")) {
-    await exec("gzip", ["-d", csBinary]);
-    csBinary = csBinary.slice(0, csBinary.length - ".gz".length);
-  }
-  if (csBinary.endsWith(".zip")) {
-    const destDir = csBinary.slice(0, csBinary.length - ".zip".length);
-    if (isWindowsJvmPackagedLauncher) {
-      await exec("unzip", [csBinary, "-d", destDir]);
-      return { path: destDir, isDir: true };
-    }
-    await exec("unzip", ["-j", csBinary, `cs-${architecture}-pc-win32.exe`, "-d", destDir]);
-    csBinary = `${destDir}\\cs-${architecture}-pc-win32.exe`;
-  }
-  await exec("chmod", ["+x", csBinary]);
+  if (!csBinary) throw new Error(`Couldn't download Coursier`);
+  if (process.platform !== "win32") fs4.chmodSync(csBinary, 493);
   return { path: csBinary, isDir: false };
+}
+async function installNativeCoursier(config) {
+  const requestedLauncher = config.nativeLauncher;
+  const toolName = requestedLauncher ? `cs-launcher-${requestedLauncher}` : "cs";
+  const previous = find(toolName, config.csVersion);
+  if (previous) {
+    addPath(previous);
+    return;
+  }
+  let downloadedLauncher = requestedLauncher;
+  let downloaded;
+  try {
+    downloaded = await downloadCoursier(config, requestedLauncher);
+  } catch (error2) {
+    if (config.preferredLauncher && error2 instanceof HTTPError && error2.httpStatusCode !== void 0 && error2.httpStatusCode >= 400 && error2.httpStatusCode < 500) {
+      warning(
+        `Preferred Coursier launcher "${config.preferredLauncher}" is not available (HTTP ${error2.httpStatusCode}); falling back to the default launcher`
+      );
+      downloadedLauncher = "";
+      downloaded = await downloadCoursier(config, "");
+    } else {
+      throw error2;
+    }
+  }
+  const binaryName = process.platform === "win32" ? "cs.exe" : "cs";
+  const downloadedToolName = downloadedLauncher ? `cs-launcher-${downloadedLauncher}` : "cs";
+  const csCached = downloaded.isDir ? await cacheDir(downloaded.path, downloadedToolName, config.csVersion) : await cacheFile(downloaded.path, binaryName, downloadedToolName, config.csVersion);
+  addPath(csCached);
 }
 function parseExtraJvmArgs(input) {
   if (!input) return [];
@@ -23764,89 +23979,47 @@ function parseExtraJvmArgs(input) {
     return arg;
   });
 }
-async function cs(...args) {
-  const requiredLauncher = launcherInput("launcher");
-  const preferredLauncher = launcherInput("preferredLauncher");
-  const normalizedLauncher = requiredLauncher.toLowerCase();
-  const normalizedPreferredLauncher = preferredLauncher.toLowerCase();
-  const jvmLaunchers = ["thin", "jvm", "assembly"];
-  if (jvmLaunchers.includes(normalizedPreferredLauncher)) {
-    throw new Error(
-      `preferredLauncher only accepts native launcher flavors; use launcher for the JVM launcher "${preferredLauncher}"`
-    );
-  }
-  if (requiredLauncher && preferredLauncher) {
-    throw new Error("launcher and preferredLauncher cannot both be set");
-  }
-  const useContainerImage = getBooleanInput("useContainerImage");
-  if (useContainerImage && !warnedAboutUseContainerImage) {
-    warning("useContainerImage is deprecated; use launcher: container instead");
-    warnedAboutUseContainerImage = true;
-  }
-  const jvmLauncherType = jvmLaunchers.includes(normalizedLauncher) ? normalizedLauncher === "assembly" ? "assembly" : "thin" : void 0;
-  let jvmLauncherPath;
+async function gunzip(archive) {
+  const dest = `${archive}-cs`;
+  await (0, import_promises.pipeline)(fs4.createReadStream(archive), zlib.createGunzip(), fs4.createWriteStream(dest));
+  fs4.rmSync(archive, { force: true });
+  return dest;
+}
+async function installCoursier(config) {
+  const { jvmLauncherType } = config;
   if (jvmLauncherType) {
-    jvmLauncherPath = await installJvmCoursier(jvmLauncherType);
-  } else {
-    const configuredLauncher = requiredLauncher || preferredLauncher || (useContainerImage ? "container" : "");
-    const requestedLauncher = resolvedLauncher ?? configuredLauncher;
-    const toolName = requestedLauncher ? `cs-launcher-${requestedLauncher}` : "cs";
-    const previous = find(toolName, csVersion);
-    if (previous) {
-      resolvedLauncher = requestedLauncher;
-      addPath(previous);
-    } else {
-      let downloadedLauncher = requestedLauncher;
-      let downloaded;
-      try {
-        downloaded = await downloadCoursier(requestedLauncher);
-      } catch (error2) {
-        if (preferredLauncher && resolvedLauncher === void 0 && error2 instanceof HTTPError && error2.httpStatusCode !== void 0 && error2.httpStatusCode >= 400 && error2.httpStatusCode < 500) {
-          warning(
-            `Preferred Coursier launcher "${preferredLauncher}" is not available (HTTP ${error2.httpStatusCode}); falling back to the default launcher`
-          );
-          downloadedLauncher = "";
-          downloaded = await downloadCoursier("");
-        } else {
-          throw error2;
-        }
-      }
-      const binaryName = process.platform === "win32" ? "cs.exe" : "cs";
-      const downloadedToolName = downloadedLauncher ? `cs-launcher-${downloadedLauncher}` : "cs";
-      const csCached = downloaded.isDir ? await cacheDir(downloaded.path, downloadedToolName, csVersion) : await cacheFile(downloaded.path, binaryName, downloadedToolName, csVersion);
-      resolvedLauncher = downloadedLauncher;
-      addPath(csCached);
+    const jvmLauncherPath = await installJvmCoursier(config, jvmLauncherType);
+    if (process.platform === "win32") {
+      const jarName = jvmLauncherType === "assembly" ? "coursier.jar" : "coursier";
+      return { windowsJar: path6.join(jvmLauncherPath, jarName), usesJavaToolOptions: false };
     }
+    return { usesJavaToolOptions: false };
   }
-  const extraJvmArgs = parseExtraJvmArgs(getInput("extraJvmArgs"));
-  const disableDefaultReposInput = getInput("disableDefaultRepos");
-  if (disableDefaultReposInput.toLowerCase() === "true") {
-    args.push("--no-default");
-  }
-  const customRepositoryInput = getInput("customRepositories");
-  if (customRepositoryInput) {
-    const repositories = customRepositoryInput.split("|");
-    repositories.forEach((repo) => {
-      args.push("-r", repo.trim());
-    });
-  }
-  if (process.platform === "win32" && jvmLauncherType && jvmLauncherPath) {
-    const jarName = jvmLauncherType === "assembly" ? "coursier.jar" : "coursier";
+  await installNativeCoursier(config);
+  return { usesJavaToolOptions: process.platform === "win32" && process.arch === "arm64" };
+}
+async function cs(config, coursier, ...args) {
+  const { extraJvmArgs } = config;
+  const csArgs = [
+    ...args,
+    ...config.disableDefaultRepos ? ["--no-default"] : [],
+    ...config.customRepositories.flatMap((repo) => ["-r", repo])
+  ];
+  if (coursier.windowsJar) {
     return execOutput("java", [
       ...extraJvmArgs.map((arg) => arg.slice(2)),
       "-jar",
-      path6.join(jvmLauncherPath, jarName),
-      ...args
+      coursier.windowsJar,
+      ...csArgs
     ]);
   }
-  const usesWindowsJvmPackagedLauncher = process.platform === "win32" && process.arch === "arm64" && !jvmLauncherType;
-  if (usesWindowsJvmPackagedLauncher && extraJvmArgs.length) {
+  if (coursier.usesJavaToolOptions && extraJvmArgs.length) {
     const toolOptions = extraJvmArgs.map((arg) => arg.slice(2)).join(" ");
     const env = { ...process.env };
     env.JAVA_TOOL_OPTIONS = [process.env.JAVA_TOOL_OPTIONS, toolOptions].filter(Boolean).join(" ");
-    return execOutput("cs", args, env);
+    return execOutput("cs", csArgs, env);
   }
-  return execOutput("cs", [...extraJvmArgs, ...args]);
+  return execOutput("cs", [...extraJvmArgs, ...csArgs]);
 }
 function parseMirrors(mirrorsInput) {
   const entries = mirrorsInput.split("\n").map((line) => line.trim()).filter((line) => line && !line.startsWith("#"));
@@ -23861,7 +24034,7 @@ function parseMirrors(mirrorsInput) {
     if (!from || !to) {
       throw new Error(`Invalid mirror entry (empty side): ${entry}`);
     }
-    const prefix = `mirror${idx}`;
+    const prefix = `setupActionMirror${idx}`;
     lines.push(`${prefix}.from=${from}`);
     lines.push(`${prefix}.to=${to}`);
   });
@@ -23872,17 +24045,37 @@ function writeMirrorsFile() {
   if (!mirrorsInput.trim()) return;
   const lines = parseMirrors(mirrorsInput);
   const entryCount = lines.length / 2;
-  const configDir = path6.join(os7.homedir(), ".config", "coursier");
-  fs4.mkdirSync(configDir, { recursive: true });
-  const mirrorFile = path6.join(configDir, "mirror.properties");
-  fs4.writeFileSync(mirrorFile, lines.join("\n") + "\n");
-  console.log(`Wrote ${entryCount} mirror entr${entryCount === 1 ? "y" : "ies"} to ${mirrorFile}`);
+  const mirrorDir = path6.join(process.env.RUNNER_TEMP || os7.tmpdir(), "coursier-setup-action");
+  fs4.mkdirSync(mirrorDir, { recursive: true });
+  const mirrorFile = path6.join(mirrorDir, "mirror.properties");
+  const existing = process.env.COURSIER_EXTRA_MIRRORS;
+  let content = "";
+  if (existing && path6.resolve(existing) !== mirrorFile) {
+    try {
+      content = fs4.readFileSync(existing, "utf8").replace(/\n?$/, "\n");
+      info(`Including mirrors from existing COURSIER_EXTRA_MIRRORS file ${existing}`);
+    } catch (error2) {
+      const msg = error2 instanceof Error ? error2.message : String(error2);
+      warning(
+        `Could not read existing COURSIER_EXTRA_MIRRORS file ${existing}, its mirrors will be ignored: ${msg}`
+      );
+    }
+  }
+  content += lines.join("\n") + "\n";
+  fs4.writeFileSync(mirrorFile, content);
+  exportVariable("COURSIER_EXTRA_MIRRORS", mirrorFile);
+  console.log(
+    `Wrote ${entryCount} mirror entr${entryCount === 1 ? "y" : "ies"} to ${mirrorFile} (exported as COURSIER_EXTRA_MIRRORS)`
+  );
 }
 async function run() {
   try {
+    const config = readConfig();
+    checkChecksumRequirement(config.csVersion, config.requireChecksum);
     writeMirrorsFile();
-    await group("Install Coursier", async () => {
-      await cs("--help");
+    const coursier = await group("Install Coursier", async () => {
+      const coursier2 = await installCoursier(config);
+      await cs(config, coursier2, "--help");
       let installedVersion = "";
       try {
         installedVersion = await execOutput("cs", ["version"]);
@@ -23891,11 +24084,12 @@ async function run() {
       }
       if (!/^\S+$/.test(installedVersion)) {
         warning(
-          `Could not get the installed Coursier version from "cs version", reporting ${csVersion} instead`
+          `Could not get the installed Coursier version from "cs version", reporting ${config.csVersion} instead`
         );
-        installedVersion = csVersion;
+        installedVersion = config.csVersion;
       }
       setOutput("cs-version", installedVersion);
+      return coursier2;
     });
     await group("Install JVM", async () => {
       const jvmInput = getInput("jvm");
@@ -23904,21 +24098,23 @@ async function run() {
       const jvmIndexArg = jvmIndexInput ? ["--jvm-index", jvmIndexInput] : [];
       if (!jvmInput && process.env.JAVA_HOME) {
         info(`skipping, JVM is already installed in ${process.env.JAVA_HOME}`);
+        setOutput("java-home", process.env.JAVA_HOME);
       } else {
-        await cs("java", ...jvmArg, ...jvmIndexArg, "-version");
-        const csJavaHome = await cs("java-home", ...jvmArg, ...jvmIndexArg);
+        await cs(config, coursier, "java", ...jvmArg, ...jvmIndexArg, "-version");
+        const csJavaHome = await cs(config, coursier, "java-home", ...jvmArg, ...jvmIndexArg);
         exportVariable("JAVA_HOME", csJavaHome);
         addPath(path6.join(csJavaHome, "bin"));
+        setOutput("java-home", csJavaHome);
       }
     });
     await group("Install Apps", async () => {
-      const value = getInput("apps").trim();
-      const apps = value.split(" ");
-      if (value && apps.length) {
+      const apps = getInput("apps").split(/\s+/).filter(Boolean);
+      if (apps.length) {
         const coursierBinDir = path6.join(os7.homedir(), "cs", "bin");
         exportVariable("COURSIER_BIN_DIR", coursierBinDir);
         addPath(coursierBinDir);
-        await cs("install", "--contrib", ...apps);
+        await cs(config, coursier, "install", "--contrib", ...apps);
+        setOutput("cs-bin-dir", coursierBinDir);
       }
     });
   } catch (error2) {
