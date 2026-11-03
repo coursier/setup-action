@@ -1,20 +1,20 @@
 name: 'coursier-setup-action'
-description: 'Use Coursier to install JVM and Scala apps'
+description: 'Install Coursier, a JVM, and JVM / Scala command-line tools such as sbt, Scala CLI or scalafmt'
 author: 'Alexey Alekhin'
 branding:
   icon: 'anchor'
   color: 'green'
 inputs:
   jvm:
-    description: 'JVM to install (leave empty to use default)'
+    description: 'JVM to install, such as "21" or "temurin:21" (see cs java --available). When empty, an existing JAVA_HOME is kept, or Coursier''s default JVM is installed.'
     required: false
     default: ''
   jvm-index:
-    description: 'Arbitrary URL containing the JVM index source (leave empty to use default)'
+    description: 'URL of a custom JVM index (leave empty to use the Coursier JVM index)'
     required: false
     default: ''
   apps:
-    description: 'Applications to install'
+    description: 'Space-separated list of apps to install from the Coursier main and contrib channels (set to an empty string to install none)'
     required: false
     default: 'sbtn'
   version:
@@ -22,11 +22,11 @@ inputs:
     required: false
     default: ''
   customRepositories:
-    description: 'The pipe (|) separated locations of non-standard repositories. See https://get-coursier.io/docs/other-repositories'
+    description: 'Pipe-separated (|) list of extra repositories passed to every cs command. See https://get-coursier.io/docs/other-repositories'
     required: false
     default: ''
   disableDefaultRepos:
-    description: 'Whether to pass the --no-default flag to coursier'
+    description: 'Set to true to pass --no-default to every cs command, so that only customRepositories are used'
     required: false
     default: 'false'
   mirrors:
