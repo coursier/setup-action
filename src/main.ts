@@ -184,7 +184,7 @@ function readConfig(): Config {
 
   const extraJvmArgs = parseExtraJvmArgs(core.getInput('extraJvmArgs'))
 
-  const disableDefaultRepos = core.getInput('disableDefaultRepos').toLowerCase() === 'true'
+  const disableDefaultRepos = core.getBooleanInput('disableDefaultRepos')
 
   const customRepositoryInput = core.getInput('customRepositories')
   const customRepositories = customRepositoryInput
