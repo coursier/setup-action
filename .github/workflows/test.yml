@@ -236,34 +236,33 @@ jobs:
         fi
 
         echo "::error::bloop about still running after 2 minutes"
+        # From here on, just collect what we can: a failing command
+        # mustn't end the step before everything is dumped
+        set +e +o pipefail
+        for server_pid in $(pgrep -f bloop.BloopServer); do
+          echo "::group::Server (pid $server_pid) threads"
+          "$JAVA_HOME/bin/jstack" -l "$server_pid"
+          echo "::endgroup::"
+        done
+        for daemon_dir in "$HOME/.local/share/scalacli/bloop/daemon" "$HOME/Library/Caches/ScalaCli/bloop/daemon"; do
+          [ -d "$daemon_dir" ] || continue
+          echo "::group::Daemon directory $daemon_dir"
+          ls -la "$daemon_dir"
+          cat "$daemon_dir/output"
+          echo "::endgroup::"
+        done
         if [ "$RUNNER_OS" = "Linux" ]; then
           echo "::group::Client (pid $pid) threads"
           for t in /proc/"$pid"/task/*; do
             echo "$(cat "$t/comm") $(cat "$t/wchan" 2>/dev/null) $(sudo cat "$t/stack" 2>/dev/null | head -5 | tr '\n' ' ')"
           done
-          ls -l /proc/"$pid"/fd || true
-          echo "::endgroup::"
-          echo "::group::Client (pid $pid) native stacks"
-          if ! command -v gdb >/dev/null; then
-            sudo apt-get update -qq >/dev/null && sudo apt-get install -y -qq gdb >/dev/null
-          fi
-          sudo gdb -p "$pid" -batch -ex 'thread apply all bt' 2>&1 || true
+          ls -l /proc/"$pid"/fd
           echo "::endgroup::"
           echo "::group::Unix sockets"
-          sudo ss -xp | grep -E 'bloop|java|Netid' || true
+          sudo ss -xp | grep -E 'bloop|java|Netid'
           echo "::endgroup::"
         fi
-        daemon_dir="$(find "$HOME/.local/share/scalacli" "$HOME/Library/Caches/ScalaCli" -type d -name daemon 2>/dev/null | head -1)"
-        echo "::group::Daemon directory $daemon_dir"
-        ls -la "$daemon_dir" || true
-        cat "$daemon_dir/output" || true
-        echo "::endgroup::"
-        for server_pid in $(pgrep -f bloop.BloopServer); do
-          echo "::group::Server (pid $server_pid) threads"
-          "$JAVA_HOME/bin/jstack" -l "$server_pid" || true
-          echo "::endgroup::"
-        done
-        kill "$pid" || true
+        kill "$pid"
         exit 1
 
   test-mirrors:
