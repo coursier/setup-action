@@ -199,7 +199,10 @@ jobs:
       uses: ./
       with:
         version: nightly
-        apps: ''
+        # multi-line value, to test splitting of apps on any whitespace
+        apps: |
+          ammonite
+          bloop
 
     - run: echo cs-version=${{ steps.cs-setup-nightly.outputs.cs-version }}
     - name: Verify nightly version output
@@ -209,6 +212,8 @@ jobs:
         test "$version" != "nightly"
         [[ "$version" =~ ^[0-9]+\.[0-9]+ ]]
     - run: cs --help
+    - run: amm --help
+    - run: bloop about
 
   test-mirrors:
     runs-on: ${{ matrix.os }}

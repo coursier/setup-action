@@ -14,7 +14,7 @@ inputs:
     required: false
     default: ''
   apps:
-    description: 'Space-separated list of apps to install from the Coursier main and contrib channels (set to an empty string to install none)'
+    description: 'Whitespace- or newline-separated list of apps to install from the Coursier main and contrib channels (set to an empty string to install none)'
     required: false
     default: 'sbtn'
   version:
