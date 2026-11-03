@@ -14,6 +14,7 @@ concurrency:
 
 jobs:
   test:
+    if: false # TEMPORARY: only run test-nightly (ubuntu-latest) while debugging the bloop about hang
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
@@ -117,6 +118,7 @@ jobs:
     - run: bloop about
 
   test-jvm-launchers:
+    if: false # TEMPORARY: only run test-nightly (ubuntu-latest) while debugging the bloop about hang
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     permissions:
@@ -180,7 +182,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-15, windows-latest]
+        # TEMPORARY: only the job where bloop about hangs, several copies
+        # to catch a hang more often (was [ubuntu-latest, macos-15, windows-latest])
+        os: [ubuntu-latest]
+        copy: [1, 2, 3, 4]
     steps:
     - uses: actions/checkout@v7
 
@@ -266,6 +271,7 @@ jobs:
         exit 1
 
   test-mirrors:
+    if: false # TEMPORARY: only run test-nightly (ubuntu-latest) while debugging the bloop about hang
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     permissions:
@@ -336,6 +342,7 @@ jobs:
   # https://github.com/coursier/coursier/releases/tag/v2.1.26): container,
   # static and compat on x86_64, container and static on aarch64.
   test-native-launcher-flavors:
+    if: false # TEMPORARY: only run test-nightly (ubuntu-latest) while debugging the bloop about hang
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     permissions:
@@ -391,6 +398,7 @@ jobs:
   # build different download URLs, and have no flavored launchers at all, so
   # run there too.
   test-missing-launcher-flavor:
+    if: false # TEMPORARY: only run test-nightly (ubuntu-latest) while debugging the bloop about hang
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     permissions:
@@ -487,6 +495,7 @@ jobs:
         check_log unpinned-version '::error::requireChecksum is enabled, but there are no pinned checksums for Coursier 2.1.25'
 
   test-jvm-index:
+    if: false # TEMPORARY: only run test-nightly (ubuntu-latest) while debugging the bloop about hang
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -537,6 +546,7 @@ jobs:
         java -version 2>&1 | grep -E 'version "21[."]'
 
   test-custom-repositories:
+    if: false # TEMPORARY: only run test-nightly (ubuntu-latest) while debugging the bloop about hang
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
