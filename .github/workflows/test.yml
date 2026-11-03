@@ -214,6 +214,57 @@ jobs:
     - run: cs --help
     - run: amm --help
     - run: bloop about
+      if: runner.os == 'Windows'
+    # `bloop about` sometimes hangs on Linux runners, right after the Bloop
+    # server starts (the client never gets an answer from the server). Rather
+    # than waiting for the job timeout, give up after a while, and dump what's
+    # needed to investigate: client threads and sockets, server threads and
+    # output.
+    - name: Run bloop about
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        bloop -v -v about &
+        pid=$!
+        for _ in $(seq 1 120); do
+          kill -0 "$pid" 2>/dev/null || break
+          sleep 1
+        done
+        if ! kill -0 "$pid" 2>/dev/null; then
+          wait "$pid"
+          exit $?
+        fi
+
+        echo "::error::bloop about still running after 2 minutes"
+        if [ "$RUNNER_OS" = "Linux" ]; then
+          echo "::group::Client (pid $pid) threads"
+          for t in /proc/"$pid"/task/*; do
+            echo "$(cat "$t/comm") $(cat "$t/wchan" 2>/dev/null) $(sudo cat "$t/stack" 2>/dev/null | head -5 | tr '\n' ' ')"
+          done
+          ls -l /proc/"$pid"/fd || true
+          echo "::endgroup::"
+          echo "::group::Client (pid $pid) native stacks"
+          if ! command -v gdb >/dev/null; then
+            sudo apt-get update -qq >/dev/null && sudo apt-get install -y -qq gdb >/dev/null
+          fi
+          sudo gdb -p "$pid" -batch -ex 'thread apply all bt' 2>&1 || true
+          echo "::endgroup::"
+          echo "::group::Unix sockets"
+          sudo ss -xp | grep -E 'bloop|java|Netid' || true
+          echo "::endgroup::"
+        fi
+        daemon_dir="$(find "$HOME/.local/share/scalacli" "$HOME/Library/Caches/ScalaCli" -type d -name daemon 2>/dev/null | head -1)"
+        echo "::group::Daemon directory $daemon_dir"
+        ls -la "$daemon_dir" || true
+        cat "$daemon_dir/output" || true
+        echo "::endgroup::"
+        for server_pid in $(pgrep -f bloop.BloopServer); do
+          echo "::group::Server (pid $server_pid) threads"
+          "$JAVA_HOME/bin/jstack" -l "$server_pid" || true
+          echo "::endgroup::"
+        done
+        kill "$pid" || true
+        exit 1
 
   test-mirrors:
     runs-on: ${{ matrix.os }}
