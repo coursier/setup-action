@@ -14,7 +14,7 @@ inputs:
     required: false
     default: ''
   apps:
-    description: 'Whitespace- or newline-separated list of apps to install from the Coursier main and contrib channels (set to an empty string to install none)'
+    description: 'Whitespace- or newline-separated list of apps to install from the Coursier main and contrib channels, optionally pinned to a version with app:version, like sbt:1.10.7 or scalafmt:3.8.3 (set to an empty string to install none)'
     required: false
     default: 'sbtn'
   version:

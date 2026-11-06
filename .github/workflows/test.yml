@@ -116,6 +116,46 @@ jobs:
     - run: amm --help
     - run: bloop about
 
+  # Apps pinned with app:version. scalafmt is a small JVM app (a .bat launcher
+  # on Windows), whose latest version is much newer than the pinned one.
+  test-app-versions:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24
+        cache: 'npm'
+
+    - name: Build
+      shell: bash
+      run: |
+        npm ci
+        npm run package
+
+    - uses: ./
+      with:
+        jvm: '17'
+        apps: scalafmt:3.8.3
+    - name: Verify the pinned scalafmt version is installed
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" = "Windows" ]; then version="$(scalafmt.bat --version)"; else version="$(scalafmt --version)"; fi
+        echo "$version"
+        version="${version//$'\r'/}"
+        if [ "$version" != "scalafmt 3.8.3" ]; then
+          echo "::error::expected scalafmt 3.8.3, got: $version"
+          exit 1
+        fi
+
   test-jvm-launchers:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
