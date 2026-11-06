@@ -411,21 +411,54 @@ async function installNativeCoursier(config: Config): Promise<void> {
   core.addPath(csCached)
 }
 
-// Parses the extraJvmArgs input into -J-prefixed args, only accepting -D system properties
-export function parseExtraJvmArgs(input: string): string[] {
-  if (!input) return []
-  return input
-    .trim()
-    .split(/\s+/)
-    .map(raw => {
-      const arg = raw.startsWith('-J') ? raw : `-J${raw}`
-      if (!/^-J-D[a-zA-Z][\w]*(\.[a-zA-Z][\w]*)*(=.*)?$/.test(arg)) {
-        throw new Error(
-          `Invalid JVM argument: ${raw}. Expected format: -J-D<key>=<value> (e.g. -J-Dhttps.proxyHost=proxy.example.com)`,
-        )
-      }
-      return arg
-    })
+// JVM options accepted in extraJvmArgs (after removing the optional -J prefix): system properties,
+// and memory / GC options. Anything else would be passed to cs as is or make no sense here.
+const propertyArgRegex = /^-D[a-zA-Z][\w]*(\.[a-zA-Z][\w]*)*(=.*)?$/
+const memoryArgRegex = /^-X(mx|ms|ss)\d+[kmgtKMGT]?$/
+const advancedArgRegex = /^-XX:([+-][a-zA-Z]\w*|[a-zA-Z]\w*=\S*)$/
+
+// Parses the extraJvmArgs input into -J-prefixed args, only accepting -D system properties,
+// -Xmx / -Xms / -Xss and -XX: options. Multi-line input has one arg per line (so that property
+// values can contain spaces), otherwise args are separated by whitespace.
+export function parseExtraJvmArgs(
+  input: string,
+  warn: (message: string) => void = core.warning,
+): string[] {
+  const trimmed = input.trim()
+  if (!trimmed) return []
+  const multiLine = trimmed.includes('\n')
+  const rawArgs = multiLine
+    ? trimmed
+        .split('\n')
+        .map(line => line.trim())
+        .filter(Boolean)
+    : trimmed.split(/\s+/)
+  return rawArgs.map(raw => {
+    const arg = raw.startsWith('-J') ? raw.slice(2) : raw
+    if (![propertyArgRegex, memoryArgRegex, advancedArgRegex].some(regex => regex.test(arg))) {
+      throw new Error(
+        `Invalid JVM argument: ${raw}. Expected -D<key>[=<value>], -Xmx<size>, -Xms<size>, -Xss<size> ` +
+          'or -XX:<option>, optionally prefixed with -J (e.g. -Dhttps.proxyHost=proxy.example.com or -Xmx2g)',
+      )
+    }
+    // Catch args written on the same line, as with the space-separated form
+    if (multiLine && /\s-(J-)?(D|X)/.test(arg)) {
+      warn(
+        `extraJvmArgs: "${raw}" is passed as a single argument, as each line of a multi-line extraJvmArgs is one argument`,
+      )
+    }
+    return `-J${arg}`
+  })
+}
+
+// Quotes an arg for JAVA_TOOL_OPTIONS, which splits on whitespace but honors '…' and "…"
+// quotes (with no escape character, but quoted parts can be concatenated, as in a shell)
+export function quoteJavaToolOption(arg: string): string {
+  if (/^[^\s'"]+$/.test(arg)) return arg
+  return arg
+    .split('"')
+    .map(part => `"${part}"`)
+    .join(`'"'`)
 }
 
 // Decompresses a .gz file next to it, removes the archive, and returns the decompressed file path
@@ -438,48 +471,75 @@ async function gunzip(archive: string): Promise<string> {
 
 // How to run the installed launcher
 interface Coursier {
-  // On Windows, JVM launchers are run via `java -jar <jar>`
-  windowsJar?: string
+  // Run via `java <JVM args> -jar <jar>`: assembly launchers (whose cs wrapper doesn't handle
+  // -J args) and, on Windows, thin launchers too
+  jar?: string
   // The Windows ARM64 jpackage launcher (cs-aarch64-pc-win32-jvm.zip) does not support
   // GraalVM-style -J flags; they are treated as application args and break CLI parsing.
-  // Extra JVM properties are passed via JAVA_TOOL_OPTIONS instead.
+  // Extra JVM args are passed via JAVA_TOOL_OPTIONS instead.
   usesJavaToolOptions: boolean
+  // GraalVM native launchers handle -J-D args themselves, and ignore other -J args with a warning
+  // (their memory settings can't be changed at runtime), so only -D args are passed to them
+  propertiesOnly: boolean
 }
 
 async function installCoursier(config: Config): Promise<Coursier> {
   const { jvmLauncherType } = config
   if (jvmLauncherType) {
     const jvmLauncherPath = await installJvmCoursier(config, jvmLauncherType)
-    if (process.platform === 'win32') {
-      const jarName = jvmLauncherType === 'assembly' ? 'coursier.jar' : 'coursier'
-      return { windowsJar: path.join(jvmLauncherPath, jarName), usesJavaToolOptions: false }
+    if (jvmLauncherType === 'assembly') {
+      return {
+        jar: path.join(jvmLauncherPath, 'coursier.jar'),
+        usesJavaToolOptions: false,
+        propertiesOnly: false,
+      }
     }
-    return { usesJavaToolOptions: false }
+    if (process.platform === 'win32') {
+      return {
+        jar: path.join(jvmLauncherPath, 'coursier'),
+        usesJavaToolOptions: false,
+        propertiesOnly: false,
+      }
+    }
+    return { usesJavaToolOptions: false, propertiesOnly: false }
   }
 
   await installNativeCoursier(config)
-  return { usesJavaToolOptions: process.platform === 'win32' && process.arch === 'arm64' }
+  const usesJavaToolOptions = process.platform === 'win32' && process.arch === 'arm64'
+  const ignored = usesJavaToolOptions ? [] : config.extraJvmArgs.filter(arg => !isPropertyArg(arg))
+  if (ignored.length) {
+    core.warning(
+      `Ignoring extraJvmArgs ${ignored.map(arg => arg.slice(2)).join(' ')}: native Coursier launchers only accept -D Java properties. Use a JVM launcher (launcher: thin) to pass other JVM options.`,
+    )
+  }
+  return { usesJavaToolOptions, propertiesOnly: !usesJavaToolOptions }
+}
+
+function isPropertyArg(arg: string): boolean {
+  return arg.startsWith('-J-D')
 }
 
 async function cs(config: Config, coursier: Coursier, ...args: string[]): Promise<string> {
-  const { extraJvmArgs } = config
+  const extraJvmArgs = coursier.propertiesOnly
+    ? config.extraJvmArgs.filter(isPropertyArg)
+    : config.extraJvmArgs
   const csArgs = [
     ...args,
     ...(config.disableDefaultRepos ? ['--no-default'] : []),
     ...config.customRepositories.flatMap(repo => ['-r', repo]),
   ]
 
-  if (coursier.windowsJar) {
+  if (coursier.jar) {
     return execOutput('java', [
       ...extraJvmArgs.map(arg => arg.slice(2)),
       '-jar',
-      coursier.windowsJar,
+      coursier.jar,
       ...csArgs,
     ])
   }
 
   if (coursier.usesJavaToolOptions && extraJvmArgs.length) {
-    const toolOptions = extraJvmArgs.map(arg => arg.slice(2)).join(' ')
+    const toolOptions = extraJvmArgs.map(arg => quoteJavaToolOption(arg.slice(2))).join(' ')
     const env: { [key: string]: string } = { ...process.env } as { [key: string]: string }
     env.JAVA_TOOL_OPTIONS = [process.env.JAVA_TOOL_OPTIONS, toolOptions].filter(Boolean).join(' ')
     return execOutput('cs', csArgs, env)

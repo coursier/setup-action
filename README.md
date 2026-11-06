@@ -42,7 +42,7 @@ All inputs are optional.
 | `customRepositories` | | Pipe-separated (`\|`) list of extra [repositories](https://get-coursier.io/docs/other-repositories) passed to every `cs` command. |
 | `disableDefaultRepos` | `false` | Set to `true` to pass `--no-default` to every `cs` command, so that only `customRepositories` are used. |
 | `mirrors` | | Newline-separated list of `from=to` [mirrors](https://get-coursier.io/docs/other-mirrors). See [Repositories and mirrors](#repositories-and-mirrors). |
-| `extraJvmArgs` | | Space-separated list of `-D` Java properties passed to every `cs` command, such as `-Dhttps.proxyHost=proxy.example.com -Dhttps.proxyPort=8080`. The `-J` prefix is added automatically. |
+| `extraJvmArgs` | | Java properties (`-D…`) and memory / GC options (`-Xmx`, `-Xms`, `-Xss`, `-XX:…`) passed to every `cs` command, space-separated, or one per line for values with spaces. See [Extra JVM arguments](#extra-jvm-arguments). |
 | `launcher` | | Coursier launcher to use. See [Coursier launchers](#coursier-launchers). |
 | `preferredLauncher` | | Like `launcher`, but falls back to the default launcher if the requested one isn't available. See [Coursier launchers](#coursier-launchers). |
 | `requireChecksum` | `false` | Set to `true` to fail unless the Coursier launcher can be checked against a SHA-256 checksum pinned in the action. Checksums are pinned only for the default version, from launchers whose [build provenance attestation](https://github.com/coursier/coursier/attestations) was verified, so `version` must be empty or set to that version. |
@@ -139,6 +139,31 @@ mirrors: |
   # Maven Central and its Google mirror both go through the corporate proxy
   https://repo1.maven.org/maven2,https://maven-central.storage-download.googleapis.com/maven2=https://packages.corp.com/maven
 ```
+
+## Extra JVM arguments
+
+`extraJvmArgs` passes JVM arguments to every `cs` command the action runs (not to the apps it installs). It accepts:
+
+- Java properties: `-D<key>` or `-D<key>=<value>`, such as `-Dhttps.proxyHost=proxy.corp.com`,
+- memory settings: `-Xmx<size>`, `-Xms<size>` and `-Xss<size>`, such as `-Xmx2g`,
+- HotSpot options: `-XX:+<option>`, `-XX:-<option>` or `-XX:<option>=<value>`, such as `-XX:+UseG1GC`.
+
+Each argument can be prefixed with `-J`, as on the `cs` command line. Other arguments are rejected.
+
+Separate arguments with spaces, or put one argument per line. When the input spans several lines, each non-empty line is one argument, so property values can contain spaces:
+
+```yml
+extraJvmArgs: -Xmx2g -Dhttps.proxyHost=proxy.corp.com -Dhttps.proxyPort=8080
+```
+
+```yml
+extraJvmArgs: |
+  -Xmx2g
+  -Dcoursier.cache=/path/with some spaces/cache
+  -Dhttp.nonProxyHosts=localhost|*.corp.com
+```
+
+The native launchers (the default, except on Windows ARM64) only handle Java properties: the action passes them `-D` arguments only, and logs a warning for the others. Use a JVM launcher (`launcher: thin`, see [Coursier launchers](#coursier-launchers)) for memory or HotSpot options to take effect. The JVM-based launchers get all arguments: on the command line of `java`, or through `JAVA_TOOL_OPTIONS` for the default Windows ARM64 launcher.
 
 ## Coursier launchers
 
