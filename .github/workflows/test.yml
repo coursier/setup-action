@@ -241,6 +241,51 @@ jobs:
           exit 1
         fi
 
+  test-invalid-java-home:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24
+        cache: 'npm'
+
+    - name: Build
+      shell: bash
+      run: |
+        npm ci
+        npm run package
+
+    # a stale JAVA_HOME should be ignored (with a warning), and a JVM installed instead
+    - id: cs-setup-invalid-java-home
+      uses: ./
+      env:
+        JAVA_HOME: ${{ runner.temp }}/no-such-jdk
+      with:
+        apps: ''
+
+    - name: Verify a working JVM was installed
+      shell: bash
+      env:
+        BOGUS_JAVA_HOME: ${{ runner.temp }}/no-such-jdk
+        OUTPUT_JAVA_HOME: ${{ steps.cs-setup-invalid-java-home.outputs.java-home }}
+      run: |
+        echo "java-home output: $OUTPUT_JAVA_HOME"
+        echo "JAVA_HOME: $JAVA_HOME"
+        test -n "$OUTPUT_JAVA_HOME"
+        test "$OUTPUT_JAVA_HOME" != "$BOGUS_JAVA_HOME"
+        test "$JAVA_HOME" = "$OUTPUT_JAVA_HOME"
+        java -version
+        "$JAVA_HOME/bin/java" -version
+
   test-nightly:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15

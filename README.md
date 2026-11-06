@@ -26,6 +26,7 @@ steps:
 1. **Installs Coursier** and adds the `cs` launcher to the `PATH`.
 2. **Installs a JVM**, sets `JAVA_HOME` and adds the JVM's `bin` directory to the `PATH`.
    If the `jvm` input is empty and `JAVA_HOME` is already set (for example by [actions/setup-java](https://github.com/actions/setup-java)), this step is skipped and the existing JVM is used.
+   If that `JAVA_HOME` doesn't contain `bin/java` (`bin\java.exe` on Windows), as can happen with a stale value on self-hosted runners, the action emits a warning, ignores it, and installs Coursier's default JVM instead.
    If the `jvm` input is empty and no `JAVA_HOME` is set, Coursier's default JVM is installed.
 3. **Installs apps** with `cs install`, into `~/cs/bin`. That directory is added to the `PATH` and exported as `COURSIER_BIN_DIR`.
 
@@ -53,7 +54,7 @@ All inputs are optional.
 | Output | Description |
 | --- | --- |
 | `cs-version` | Version of the installed Coursier, as reported by `cs version`. With `version: nightly`, this is the actual version of the nightly build, not `nightly`. |
-| `java-home` | `JAVA_HOME` in effect after the action: the JVM installed by Coursier, or the pre-existing `JAVA_HOME` when the `jvm` input is empty and `JAVA_HOME` was already set. |
+| `java-home` | `JAVA_HOME` in effect after the action: the JVM installed by Coursier, or the pre-existing `JAVA_HOME` when the `jvm` input is empty and `JAVA_HOME` was already set to a valid JVM. |
 | `cs-bin-dir` | Directory the apps were installed to, also exported as `COURSIER_BIN_DIR`. Only set when apps are installed: when `apps` is empty, it evaluates to an empty string. |
 
 ## Examples
@@ -98,7 +99,7 @@ steps:
 
 ### Use a JVM installed by another action
 
-When `jvm` is empty and `JAVA_HOME` is set, the action keeps the existing JVM:
+When `jvm` is empty and `JAVA_HOME` is set (and contains `bin/java`), the action keeps the existing JVM:
 
 ```yml
 steps:

@@ -6,7 +6,7 @@ branding:
   color: 'green'
 inputs:
   jvm:
-    description: 'JVM to install, such as "21" or "temurin:21" (see cs java --available). When empty, an existing JAVA_HOME is kept, or Coursier''s default JVM is installed.'
+    description: 'JVM to install, such as "21" or "temurin:21" (see cs java --available). When empty, an existing JAVA_HOME is kept if it contains bin/java (bin/java.exe on Windows), else Coursier''s default JVM is installed (with a warning if JAVA_HOME was set but invalid).'
     required: false
     default: ''
   jvm-index:
