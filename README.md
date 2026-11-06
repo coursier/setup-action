@@ -39,7 +39,7 @@ All inputs are optional.
 | `jvm-index` | | URL of a custom [JVM index](https://get-coursier.io/docs/cli-java.html#jvm-index), as in `cs java --available --jvm-index https://url/of/your/index.json`. The Coursier JVM index is used when empty. |
 | `apps` | `sbtn` | Whitespace- or newline-separated list of apps to install, from the [main and contrib channels](https://github.com/coursier/apps). Set it to `''` to install no apps. |
 | `version` | a recent release | Coursier version to install, such as `2.1.25`. Use `nightly` for the latest [nightly build](https://github.com/coursier/coursier/releases/tag/nightly). Only the launchers of the default version are checked against pinned checksums, see `requireChecksum`. |
-| `customRepositories` | | Pipe-separated (`\|`) list of extra [repositories](https://get-coursier.io/docs/other-repositories) passed to every `cs` command. |
+| `customRepositories` | | List of extra [repositories](https://get-coursier.io/docs/other-repositories) passed to every `cs` command, separated by pipes (`\|`) or newlines. Empty entries are ignored. |
 | `disableDefaultRepos` | `false` | Set to `true` to pass `--no-default` to every `cs` command, so that only `customRepositories` are used. |
 | `mirrors` | | Newline-separated list of `from=to` [mirrors](https://get-coursier.io/docs/other-mirrors). See [Repositories and mirrors](#repositories-and-mirrors). |
 | `extraJvmArgs` | | Space-separated list of `-D` Java properties passed to every `cs` command, such as `-Dhttps.proxyHost=proxy.example.com -Dhttps.proxyPort=8080`. The `-J` prefix is added automatically. |

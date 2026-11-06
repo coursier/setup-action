@@ -22,7 +22,7 @@ inputs:
     required: false
     default: ''
   customRepositories:
-    description: 'Pipe-separated (|) list of extra repositories passed to every cs command. See https://get-coursier.io/docs/other-repositories'
+    description: 'List of extra repositories passed to every cs command, separated by pipes (|) or newlines. Empty entries are ignored. See https://get-coursier.io/docs/other-repositories'
     required: false
     default: ''
   disableDefaultRepos:
