@@ -467,6 +467,15 @@ export function parseCustomRepositories(input: string): string[] {
     .filter(Boolean)
 }
 
+// Splits the customRepositories input on '|' and newlines, dropping empty entries
+// (so that a trailing '|' or newline doesn't end up as an empty -r argument)
+export function parseCustomRepositories(input: string): string[] {
+  return input
+    .split(/[|\n]/)
+    .map(repo => repo.trim())
+    .filter(Boolean)
+}
+
 // Decompresses a .gz file next to it, removes the archive, and returns the decompressed file path
 async function gunzip(archive: string): Promise<string> {
   const dest = `${archive}-cs`
