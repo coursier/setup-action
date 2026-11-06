@@ -49,17 +49,22 @@ jobs:
     # java -jar on Windows JVM launchers, or JAVA_TOOL_OPTIONS on Windows ARM64).
     # This replaces an older negative test (bogus HTTPS proxy, expect failure),
     # which also passed when the action failed for any unrelated reason.
-    # The path is relative to the workspace, to avoid Windows path quirks.
+    # The path is relative to the workspace, to avoid Windows path quirks. It
+    # contains a space, which the multi-line form of extraJvmArgs allows. -Xmx
+    # checks that memory options are accepted (native launchers ignore them,
+    # see test-jvm-launchers for a check that they take effect).
     - name: Test extraJvmArgs passes args to cs
       uses: ./
       with:
         jvm: ${{ matrix.jvm }}
         apps: ''
-        extraJvmArgs: -Dcoursier.cache=.ci-tmp/extra-jvm-args-cache
+        extraJvmArgs: |
+          -Xmx512m
+          -Dcoursier.cache=.ci-tmp/extra jvm args cache
     - name: Verify extraJvmArgs changed the coursier cache location
       shell: bash
       run: |
-        index=.ci-tmp/extra-jvm-args-cache/https/github.com/coursier/jvm-index/raw/master/index.json
+        index=".ci-tmp/extra jvm args cache/https/github.com/coursier/jvm-index/raw/master/index.json"
         if [ -f "$index" ]; then
           echo "extraJvmArgs correctly passed to cs (JVM index cached under the custom cache)"
         else
@@ -173,6 +178,28 @@ jobs:
         test "${{ steps.cs-setup-jvm-launcher.outputs.cs-version }}" = "$expected"
     - run: cs --help
     - run: java -version
+
+    # test that extraJvmArgs JVM options reach the JVM running cs: the VM log
+    # file lists the JVM options cs was started with (the JVM doesn't create
+    # its parent directory)
+    - run: mkdir -p .ci-tmp
+      shell: bash
+    - name: Test extraJvmArgs passes JVM options to cs
+      uses: ./
+      with:
+        launcher: ${{ matrix.launcher }}
+        apps: ''
+        extraJvmArgs: -Xmx321m -XX:+UnlockDiagnosticVMOptions -XX:+LogVMOutput -XX:LogFile=.ci-tmp/cs-vm.log
+    - name: Verify extraJvmArgs JVM options took effect
+      shell: bash
+      run: |
+        if grep -q -- '-Xmx321m' .ci-tmp/cs-vm.log; then
+          echo "extraJvmArgs JVM options correctly passed to cs"
+        else
+          echo "::error::extraJvmArgs test: -Xmx321m not found in the VM log of cs"
+          cat .ci-tmp/cs-vm.log || true
+          exit 1
+        fi
 
   test-nightly:
     runs-on: ${{ matrix.os }}

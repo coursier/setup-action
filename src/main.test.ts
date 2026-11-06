@@ -9,6 +9,7 @@ import {
   getReleaseTag,
   parseExtraJvmArgs,
   parseMirrors,
+  quoteJavaToolOption,
   splitMilestone,
   useVirtusLabRepo,
   validateLauncher,
@@ -121,33 +122,140 @@ describe('validateLauncher', () => {
 })
 
 describe('parseExtraJvmArgs', () => {
+  // Fails the test on unexpected warnings
+  const noWarning = (message: string): never => assert.fail(`unexpected warning: ${message}`)
+  const parse = (input: string): string[] => parseExtraJvmArgs(input, noWarning)
+
   it('returns nothing for empty input', () => {
-    assert.deepEqual(parseExtraJvmArgs(''), [])
+    assert.deepEqual(parse(''), [])
+    assert.deepEqual(parse('  \n \n'), [])
   })
 
   it('adds the -J prefix when missing', () => {
-    assert.deepEqual(parseExtraJvmArgs('-Dfoo=bar -J-Dhttps.proxyHost=proxy.example.com'), [
+    assert.deepEqual(parse('-Dfoo=bar -J-Dhttps.proxyHost=proxy.example.com'), [
       '-J-Dfoo=bar',
       '-J-Dhttps.proxyHost=proxy.example.com',
     ])
   })
 
-  it('splits on any whitespace', () => {
-    assert.deepEqual(parseExtraJvmArgs('  -Da=1\n\t-Db  '), ['-J-Da=1', '-J-Db'])
+  it('splits single-line input on any whitespace', () => {
+    assert.deepEqual(parse('  -Da=1 \t-Db  '), ['-J-Da=1', '-J-Db'])
   })
 
   it('keeps values containing special characters', () => {
-    assert.deepEqual(parseExtraJvmArgs('-Dhttp.nonProxyHosts=localhost|*.example.com'), [
+    assert.deepEqual(parse('-Dhttp.nonProxyHosts=localhost|*.example.com'), [
       '-J-Dhttp.nonProxyHosts=localhost|*.example.com',
+    ])
+    assert.deepEqual(parse('-Dfoo= -Dbar==b"\'z'), ['-J-Dfoo=', '-J-Dbar==b"\'z'])
+  })
+
+  it('accepts memory options', () => {
+    assert.deepEqual(parse('-Xmx2g -J-Xms512m -Xss4m -Xmx1024 -Xmx2G -Xss1k -Xmx1t'), [
+      '-J-Xmx2g',
+      '-J-Xms512m',
+      '-J-Xss4m',
+      '-J-Xmx1024',
+      '-J-Xmx2G',
+      '-J-Xss1k',
+      '-J-Xmx1t',
     ])
   })
 
-  it('rejects non -D args', () => {
-    assert.throws(() => parseExtraJvmArgs('-Xmx2g'), /Invalid JVM argument: -Xmx2g/)
-    assert.throws(() => parseExtraJvmArgs('-J-Xmx2g'), /Invalid JVM argument: -J-Xmx2g/)
-    assert.throws(() => parseExtraJvmArgs('-Dfoo=bar --help'), /Invalid JVM argument: --help/)
-    assert.throws(() => parseExtraJvmArgs('-D1foo=bar'), /Invalid JVM argument/)
-    assert.throws(() => parseExtraJvmArgs('-Dfoo..bar=baz'), /Invalid JVM argument/)
+  it('accepts -XX: options', () => {
+    assert.deepEqual(
+      parse(
+        '-XX:+UseG1GC -J-XX:-UseAdaptiveSizePolicy -XX:MaxRAMPercentage=75 -XX:LogFile=/tmp/a.log',
+      ),
+      [
+        '-J-XX:+UseG1GC',
+        '-J-XX:-UseAdaptiveSizePolicy',
+        '-J-XX:MaxRAMPercentage=75',
+        '-J-XX:LogFile=/tmp/a.log',
+      ],
+    )
+  })
+
+  it('mixes properties and JVM options', () => {
+    assert.deepEqual(parse('-Xmx2g -Dfoo=bar -XX:+UseSerialGC'), [
+      '-J-Xmx2g',
+      '-J-Dfoo=bar',
+      '-J-XX:+UseSerialGC',
+    ])
+  })
+
+  it('rejects other args', () => {
+    assert.throws(() => parse('-Dfoo=bar --help'), /Invalid JVM argument: --help/)
+    assert.throws(() => parse('-D1foo=bar'), /Invalid JVM argument/)
+    assert.throws(() => parse('-Dfoo..bar=baz'), /Invalid JVM argument/)
+    assert.throws(() => parse('-D'), /Invalid JVM argument/)
+    assert.throws(() => parse('foo'), /Invalid JVM argument: foo/)
+    assert.throws(() => parse('-J'), /Invalid JVM argument/)
+    assert.throws(() => parse('-jar foo.jar'), /Invalid JVM argument: -jar/)
+    assert.throws(() => parse('-javaagent:agent.jar'), /Invalid JVM argument/)
+    assert.throws(() => parse('-J-agentlib:jdwp=transport=dt_socket'), /Invalid JVM argument/)
+    assert.throws(() => parse('-cp foo'), /Invalid JVM argument: -cp/)
+    assert.throws(() => parse('-version'), /Invalid JVM argument/)
+    assert.throws(() => parse('-Xlog:gc'), /Invalid JVM argument/)
+    assert.throws(() => parse('-Xint'), /Invalid JVM argument/)
+    assert.throws(() => parse('-Xmx'), /Invalid JVM argument/)
+    assert.throws(() => parse('-Xmx2gb'), /Invalid JVM argument/)
+    assert.throws(() => parse('-Xmx-1g'), /Invalid JVM argument/)
+    assert.throws(() => parse('-XX:'), /Invalid JVM argument/)
+    assert.throws(() => parse('-XX:+'), /Invalid JVM argument/)
+    assert.throws(() => parse('-XX:Foo'), /Invalid JVM argument/)
+    assert.throws(() => parse('-XX:+Foo=1'), /Invalid JVM argument/)
+    assert.throws(() => parse('-XXFoo'), /Invalid JVM argument/)
+    assert.throws(() => parse('-J-J-Dfoo'), /Invalid JVM argument/)
+  })
+
+  it('takes one arg per line in multi-line input, allowing spaces in property values', () => {
+    assert.deepEqual(parse('-Dfoo=a b  c\n\n  -J-Dbar=x\ty  \n-Xmx2g\r\n-XX:+UseG1GC\n-Dbaz\n'), [
+      '-J-Dfoo=a b  c',
+      '-J-Dbar=x\ty',
+      '-J-Xmx2g',
+      '-J-XX:+UseG1GC',
+      '-J-Dbaz',
+    ])
+  })
+
+  it('only allows spaces in property values', () => {
+    assert.throws(() => parse('-Dfoo bar=a\n-Db'), /Invalid JVM argument: -Dfoo bar=a/)
+    assert.throws(() => parse('-Xmx2g -Xms1g\n-Db'), /Invalid JVM argument: -Xmx2g -Xms1g/)
+    assert.throws(() => parse('-XX:Foo=a b\n-Db'), /Invalid JVM argument/)
+  })
+
+  it('warns about multi-line input lines that look like several args', () => {
+    const warnings: string[] = []
+    assert.deepEqual(
+      parseExtraJvmArgs('-Da=1 -Db=2\n-Dc=x -Xmx2g\n-Dd=x -J-Dy\n-De=a -b', m => warnings.push(m)),
+      ['-J-Da=1 -Db=2', '-J-Dc=x -Xmx2g', '-J-Dd=x -J-Dy', '-J-De=a -b'],
+    )
+    assert.equal(warnings.length, 3)
+    assert.match(warnings[0], /"-Da=1 -Db=2" is passed as a single argument/)
+  })
+
+  it('keeps the space-separated form for input that is a single line', () => {
+    assert.deepEqual(parse('-Da=1 -Db=2'), ['-J-Da=1', '-J-Db=2'])
+    assert.throws(() => parse('-Dfoo=a b'), /Invalid JVM argument: b/)
+  })
+})
+
+describe('quoteJavaToolOption', () => {
+  it('leaves simple args alone', () => {
+    assert.equal(quoteJavaToolOption('-Dfoo=bar'), '-Dfoo=bar')
+    assert.equal(quoteJavaToolOption('-Xmx2g'), '-Xmx2g')
+    assert.equal(quoteJavaToolOption('-Dfoo=a|b*c'), '-Dfoo=a|b*c')
+  })
+
+  it('quotes args with whitespace or quotes', () => {
+    assert.equal(quoteJavaToolOption('-Dfoo=a b'), '"-Dfoo=a b"')
+    assert.equal(quoteJavaToolOption('-Dfoo=a\tb'), '"-Dfoo=a\tb"')
+    assert.equal(quoteJavaToolOption("-Dfoo=it's"), `"-Dfoo=it's"`)
+  })
+
+  it('single-quotes double quotes', () => {
+    assert.equal(quoteJavaToolOption('-Dfoo=a"b c'), `"-Dfoo=a"'"'"b c"`)
+    assert.equal(quoteJavaToolOption('-Dfoo="x"'), `"-Dfoo="'"'"x"'"'""`)
   })
 })
 
