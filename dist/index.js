@@ -23726,7 +23726,7 @@ async function execOutput(cmd, args, env) {
   if (env) {
     options.env = env;
   }
-  await exec(cmd, args.filter(Boolean), options);
+  await exec(cmd, args, options);
   return output.trim();
 }
 async function sha256(filePath) {
@@ -23798,8 +23798,7 @@ function readConfig() {
   const nativeLauncher = requiredLauncher || preferredLauncher || (useContainerImage ? "container" : "");
   const extraJvmArgs = parseExtraJvmArgs(getInput("extraJvmArgs"));
   const disableDefaultRepos = getBooleanInput("disableDefaultRepos");
-  const customRepositoryInput = getInput("customRepositories");
-  const customRepositories = customRepositoryInput ? customRepositoryInput.split("|").map((repo) => repo.trim()) : [];
+  const customRepositories = parseCustomRepositories(getInput("customRepositories"));
   const requireChecksum = getBooleanInput("requireChecksum");
   return {
     csVersion,
@@ -23967,17 +23966,35 @@ async function installNativeCoursier(config) {
   const csCached = downloaded.isDir ? await cacheDir(downloaded.path, downloadedToolName, config.csVersion) : await cacheFile(downloaded.path, binaryName, downloadedToolName, config.csVersion);
   addPath(csCached);
 }
-function parseExtraJvmArgs(input) {
-  if (!input) return [];
-  return input.trim().split(/\s+/).map((raw) => {
-    const arg = raw.startsWith("-J") ? raw : `-J${raw}`;
-    if (!/^-J-D[a-zA-Z][\w]*(\.[a-zA-Z][\w]*)*(=.*)?$/.test(arg)) {
+var propertyArgRegex = /^-D[a-zA-Z][\w]*(\.[a-zA-Z][\w]*)*(=.*)?$/;
+var memoryArgRegex = /^-X(mx|ms|ss)\d+[kmgtKMGT]?$/;
+var advancedArgRegex = /^-XX:([+-][a-zA-Z]\w*|[a-zA-Z]\w*=\S*)$/;
+function parseExtraJvmArgs(input, warn = warning) {
+  const trimmed = input.trim();
+  if (!trimmed) return [];
+  const multiLine = trimmed.includes("\n");
+  const rawArgs = multiLine ? trimmed.split("\n").map((line) => line.trim()).filter(Boolean) : trimmed.split(/\s+/);
+  return rawArgs.map((raw) => {
+    const arg = raw.startsWith("-J") ? raw.slice(2) : raw;
+    if (![propertyArgRegex, memoryArgRegex, advancedArgRegex].some((regex) => regex.test(arg))) {
       throw new Error(
-        `Invalid JVM argument: ${raw}. Expected format: -J-D<key>=<value> (e.g. -J-Dhttps.proxyHost=proxy.example.com)`
+        `Invalid JVM argument: ${raw}. Expected -D<key>[=<value>], -Xmx<size>, -Xms<size>, -Xss<size> or -XX:<option>, optionally prefixed with -J (e.g. -Dhttps.proxyHost=proxy.example.com or -Xmx2g)`
       );
     }
-    return arg;
+    if (multiLine && /\s-(J-)?(D|X)/.test(arg)) {
+      warn(
+        `extraJvmArgs: "${raw}" is passed as a single argument, as each line of a multi-line extraJvmArgs is one argument`
+      );
+    }
+    return `-J${arg}`;
   });
+}
+function quoteJavaToolOption(arg) {
+  if (/^[^\s'"]+$/.test(arg)) return arg;
+  return arg.split('"').map((part) => `"${part}"`).join(`'"'`);
+}
+function parseCustomRepositories(input) {
+  return input.split(/[|\n]/).map((repo) => repo.trim()).filter(Boolean);
 }
 async function gunzip(archive) {
   const dest = `${archive}-cs`;
@@ -23989,32 +24006,52 @@ async function installCoursier(config) {
   const { jvmLauncherType } = config;
   if (jvmLauncherType) {
     const jvmLauncherPath = await installJvmCoursier(config, jvmLauncherType);
-    if (process.platform === "win32") {
-      const jarName = jvmLauncherType === "assembly" ? "coursier.jar" : "coursier";
-      return { windowsJar: path6.join(jvmLauncherPath, jarName), usesJavaToolOptions: false };
+    if (jvmLauncherType === "assembly") {
+      return {
+        jar: path6.join(jvmLauncherPath, "coursier.jar"),
+        usesJavaToolOptions: false,
+        propertiesOnly: false
+      };
     }
-    return { usesJavaToolOptions: false };
+    if (process.platform === "win32") {
+      return {
+        jar: path6.join(jvmLauncherPath, "coursier"),
+        usesJavaToolOptions: false,
+        propertiesOnly: false
+      };
+    }
+    return { usesJavaToolOptions: false, propertiesOnly: false };
   }
   await installNativeCoursier(config);
-  return { usesJavaToolOptions: process.platform === "win32" && process.arch === "arm64" };
+  const usesJavaToolOptions = process.platform === "win32" && process.arch === "arm64";
+  const ignored = usesJavaToolOptions ? [] : config.extraJvmArgs.filter((arg) => !isPropertyArg(arg));
+  if (ignored.length) {
+    warning(
+      `Ignoring extraJvmArgs ${ignored.map((arg) => arg.slice(2)).join(" ")}: native Coursier launchers only accept -D Java properties. Use a JVM launcher (launcher: thin) to pass other JVM options.`
+    );
+  }
+  return { usesJavaToolOptions, propertiesOnly: !usesJavaToolOptions };
+}
+function isPropertyArg(arg) {
+  return arg.startsWith("-J-D");
 }
 async function cs(config, coursier, ...args) {
-  const { extraJvmArgs } = config;
+  const extraJvmArgs = coursier.propertiesOnly ? config.extraJvmArgs.filter(isPropertyArg) : config.extraJvmArgs;
   const csArgs = [
     ...args,
     ...config.disableDefaultRepos ? ["--no-default"] : [],
     ...config.customRepositories.flatMap((repo) => ["-r", repo])
   ];
-  if (coursier.windowsJar) {
+  if (coursier.jar) {
     return execOutput("java", [
       ...extraJvmArgs.map((arg) => arg.slice(2)),
       "-jar",
-      coursier.windowsJar,
+      coursier.jar,
       ...csArgs
     ]);
   }
   if (coursier.usesJavaToolOptions && extraJvmArgs.length) {
-    const toolOptions = extraJvmArgs.map((arg) => arg.slice(2)).join(" ");
+    const toolOptions = extraJvmArgs.map((arg) => quoteJavaToolOption(arg.slice(2))).join(" ");
     const env = { ...process.env };
     env.JAVA_TOOL_OPTIONS = [process.env.JAVA_TOOL_OPTIONS, toolOptions].filter(Boolean).join(" ");
     return execOutput("cs", csArgs, env);
