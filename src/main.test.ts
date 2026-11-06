@@ -7,6 +7,7 @@ import {
   coursierDownloadUrl,
   getCoursierArchitecture,
   getReleaseTag,
+  parseCustomRepositories,
   parseExtraJvmArgs,
   parseMirrors,
   quoteJavaToolOption,
@@ -256,6 +257,44 @@ describe('quoteJavaToolOption', () => {
   it('single-quotes double quotes', () => {
     assert.equal(quoteJavaToolOption('-Dfoo=a"b c'), `"-Dfoo=a"'"'"b c"`)
     assert.equal(quoteJavaToolOption('-Dfoo="x"'), `"-Dfoo="'"'"x"'"'""`)
+  })
+})
+
+describe('parseCustomRepositories', () => {
+  it('splits on pipes', () => {
+    assert.deepEqual(parseCustomRepositories('https://a|https://b'), ['https://a', 'https://b'])
+    assert.deepEqual(parseCustomRepositories('https://a'), ['https://a'])
+  })
+
+  it('trims entries', () => {
+    assert.deepEqual(parseCustomRepositories(' https://a | ivy2Local '), ['https://a', 'ivy2Local'])
+  })
+
+  it('drops empty entries', () => {
+    assert.deepEqual(parseCustomRepositories('https://a|'), ['https://a'])
+    assert.deepEqual(parseCustomRepositories('|https://a'), ['https://a'])
+    assert.deepEqual(parseCustomRepositories('a||b'), ['a', 'b'])
+    assert.deepEqual(parseCustomRepositories('a| |b'), ['a', 'b'])
+  })
+
+  it('returns nothing for empty or blank input', () => {
+    assert.deepEqual(parseCustomRepositories(''), [])
+    assert.deepEqual(parseCustomRepositories('   '), [])
+    assert.deepEqual(parseCustomRepositories('|'), [])
+    assert.deepEqual(parseCustomRepositories('\n'), [])
+  })
+
+  it('splits on newlines', () => {
+    assert.deepEqual(parseCustomRepositories('https://a\nhttps://b\n'), ['https://a', 'https://b'])
+    assert.deepEqual(parseCustomRepositories('https://a\r\n\r\nhttps://b'), [
+      'https://a',
+      'https://b',
+    ])
+    assert.deepEqual(parseCustomRepositories('https://a|https://b\nhttps://c'), [
+      'https://a',
+      'https://b',
+      'https://c',
+    ])
   })
 })
 

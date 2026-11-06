@@ -77,7 +77,7 @@ async function execOutput(
   if (env) {
     options.env = env
   }
-  await cli.exec(cmd, args.filter(Boolean), options)
+  await cli.exec(cmd, args, options)
   return output.trim()
 }
 
@@ -186,10 +186,7 @@ function readConfig(): Config {
 
   const disableDefaultRepos = core.getBooleanInput('disableDefaultRepos')
 
-  const customRepositoryInput = core.getInput('customRepositories')
-  const customRepositories = customRepositoryInput
-    ? customRepositoryInput.split('|').map(repo => repo.trim())
-    : []
+  const customRepositories = parseCustomRepositories(core.getInput('customRepositories'))
 
   const requireChecksum = core.getBooleanInput('requireChecksum')
 
@@ -459,6 +456,15 @@ export function quoteJavaToolOption(arg: string): string {
     .split('"')
     .map(part => `"${part}"`)
     .join(`'"'`)
+}
+
+// Splits the customRepositories input on '|' and newlines, dropping empty entries
+// (so that a trailing '|' or newline doesn't end up as an empty -r argument)
+export function parseCustomRepositories(input: string): string[] {
+  return input
+    .split(/[|\n]/)
+    .map(repo => repo.trim())
+    .filter(Boolean)
 }
 
 // Decompresses a .gz file next to it, removes the archive, and returns the decompressed file path
