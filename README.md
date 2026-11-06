@@ -37,7 +37,7 @@ All inputs are optional.
 | --- | --- | --- |
 | `jvm` | | JVM to install, such as `21`, `temurin:21` or `graalvm-community:25`. Run `cs java --available` to list valid values. See [above](#what-the-action-does) for what happens when it is empty. |
 | `jvm-index` | | URL of a custom [JVM index](https://get-coursier.io/docs/cli-java.html#jvm-index), as in `cs java --available --jvm-index https://url/of/your/index.json`. The Coursier JVM index is used when empty. |
-| `apps` | `sbtn` | Whitespace- or newline-separated list of apps to install, from the [main and contrib channels](https://github.com/coursier/apps). Set it to `''` to install no apps. |
+| `apps` | `sbtn` | Whitespace- or newline-separated list of apps to install, from the [main and contrib channels](https://github.com/coursier/apps). Each app installs its latest version by default; append `:<version>` to pin one, like `sbt:1.10.7` or `scalafmt:3.8.3` (see [Pinned app versions](#pinned-app-versions)). Set it to `''` to install no apps. |
 | `version` | a recent release | Coursier version to install, such as `2.1.25`. Use `nightly` for the latest [nightly build](https://github.com/coursier/coursier/releases/tag/nightly). Only the launchers of the default version are checked against pinned checksums, see `requireChecksum`. |
 | `customRepositories` | | Pipe-separated (`\|`) list of extra [repositories](https://get-coursier.io/docs/other-repositories) passed to every `cs` command. |
 | `disableDefaultRepos` | `false` | Set to `true` to pass `--no-default` to every `cs` command, so that only `customRepositories` are used. |
@@ -68,6 +68,21 @@ steps:
       jvm: temurin:17
       apps: sbt sbtn bloop scalafmt
 ```
+
+### Pinned app versions
+
+For reproducible builds, pin app versions with `app:version`:
+
+```yml
+steps:
+  - uses: actions/checkout@v7
+  - uses: coursier/setup-action@v3
+    with:
+      jvm: temurin:21
+      apps: sbt:1.10.7 scalafmt:3.8.3 scala-cli:1.5.4
+```
+
+The version replaces the `latest.stable` / `latest.release` version of the app descriptor, so it works for apps of both the main and contrib channels. It must be a version published for that app (the action fails otherwise), and it is resolved the way `cs install app:version` does: a version range like `3.8.+` is accepted too, but only an exact version is reproducible. Apps without a version keep installing their latest version.
 
 ### Scala CLI
 
