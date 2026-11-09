@@ -24105,11 +24105,28 @@ function writeMirrorsFile() {
     `Wrote ${entryCount} mirror entr${entryCount === 1 ? "y" : "ies"} to ${mirrorFile} (exported as COURSIER_EXTRA_MIRRORS)`
   );
 }
+function checkExistingJavaHome(jvmInput, javaHome, platform2, exists2) {
+  if (jvmInput || !javaHome) return { keep: false };
+  const java = path6.join(javaHome, "bin", platform2 === "win32" ? "java.exe" : "java");
+  return exists2(java) ? { keep: true, javaHome } : { keep: false, invalidJavaHome: javaHome };
+}
 async function run() {
   try {
     const config = readConfig();
     checkChecksumRequirement(config.csVersion, config.requireChecksum);
     writeMirrorsFile();
+    const existingJavaHome = checkExistingJavaHome(
+      getInput("jvm"),
+      process.env.JAVA_HOME,
+      process.platform,
+      fs4.existsSync
+    );
+    if (!existingJavaHome.keep && existingJavaHome.invalidJavaHome) {
+      warning(
+        `JAVA_HOME is set to ${existingJavaHome.invalidJavaHome}, but no java launcher was found under its bin directory. Ignoring it, and installing Coursier's default JVM instead (set the jvm input to pick a specific JVM).`
+      );
+      delete process.env.JAVA_HOME;
+    }
     const coursier = await group("Install Coursier", async () => {
       const coursier2 = await installCoursier(config);
       await cs(config, coursier2, "--help");
@@ -24133,9 +24150,9 @@ async function run() {
       const jvmIndexInput = getInput("jvm-index");
       const jvmArg = jvmInput ? ["--jvm", jvmInput] : [];
       const jvmIndexArg = jvmIndexInput ? ["--jvm-index", jvmIndexInput] : [];
-      if (!jvmInput && process.env.JAVA_HOME) {
-        info(`skipping, JVM is already installed in ${process.env.JAVA_HOME}`);
-        setOutput("java-home", process.env.JAVA_HOME);
+      if (existingJavaHome.keep) {
+        info(`skipping, JVM is already installed in ${existingJavaHome.javaHome}`);
+        setOutput("java-home", existingJavaHome.javaHome);
       } else {
         await cs(config, coursier, "java", ...jvmArg, ...jvmIndexArg, "-version");
         const csJavaHome = await cs(config, coursier, "java-home", ...jvmArg, ...jvmIndexArg);
