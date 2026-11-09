@@ -1,8 +1,10 @@
 import { describe, it } from 'node:test'
 import * as assert from 'node:assert/strict'
+import * as path from 'node:path'
 
 import {
   checkChecksumRequirement,
+  checkExistingJavaHome,
   compareCoursierVersions,
   coursierDownloadUrl,
   getCoursierArchitecture,
@@ -442,5 +444,44 @@ describe('checkChecksumRequirement', () => {
     for (const version of Object.keys(pinnedChecksums)) {
       assert.doesNotThrow(() => checkChecksumRequirement(version, true))
     }
+  })
+})
+
+describe('checkExistingJavaHome', () => {
+  const javaHome = path.join('/opt', 'jdk')
+  const existing =
+    (files: string[]): ((p: string) => boolean) =>
+    (p: string): boolean =>
+      files.includes(p)
+
+  it('keeps a JAVA_HOME containing a java launcher', () => {
+    const exists = existing([path.join(javaHome, 'bin', 'java')])
+    assert.deepEqual(checkExistingJavaHome('', javaHome, 'linux', exists), { keep: true, javaHome })
+  })
+
+  it('looks for java.exe on Windows', () => {
+    const exists = existing([path.join(javaHome, 'bin', 'java.exe')])
+    assert.deepEqual(checkExistingJavaHome('', javaHome, 'win32', exists), { keep: true, javaHome })
+    assert.deepEqual(checkExistingJavaHome('', javaHome, 'linux', exists), {
+      keep: false,
+      invalidJavaHome: javaHome,
+    })
+  })
+
+  it('reports a JAVA_HOME without a java launcher', () => {
+    assert.deepEqual(checkExistingJavaHome('', javaHome, 'linux', existing([])), {
+      keep: false,
+      invalidJavaHome: javaHome,
+    })
+  })
+
+  it('installs a JVM when JAVA_HOME is unset or empty', () => {
+    assert.deepEqual(checkExistingJavaHome('', undefined, 'linux', existing([])), { keep: false })
+    assert.deepEqual(checkExistingJavaHome('', '', 'linux', existing([])), { keep: false })
+  })
+
+  it('ignores JAVA_HOME when the jvm input is set, without checking it', () => {
+    const exists = (): boolean => assert.fail('should not check files')
+    assert.deepEqual(checkExistingJavaHome('21', javaHome, 'linux', exists), { keep: false })
   })
 })

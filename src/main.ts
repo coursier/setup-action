@@ -618,11 +618,43 @@ function writeMirrorsFile(): void {
   )
 }
 
+// Decides whether the "Install JVM" step keeps a pre-existing JAVA_HOME. It's kept only when
+// the jvm input is empty and JAVA_HOME contains a java launcher. A stale JAVA_HOME (common on
+// self-hosted runners, or after a runner image update) is reported via invalidJavaHome, and
+// Coursier's default JVM gets installed instead. We fall back rather than fail: the user didn't
+// ask for a specific JVM, so any working one fulfils the request, and failing would break
+// workflows that worked before over an environment issue they may not control.
+export function checkExistingJavaHome(
+  jvmInput: string,
+  javaHome: string | undefined,
+  platform: string,
+  exists: (p: string) => boolean,
+): { keep: true; javaHome: string } | { keep: false; invalidJavaHome?: string } {
+  if (jvmInput || !javaHome) return { keep: false }
+  const java = path.join(javaHome, 'bin', platform === 'win32' ? 'java.exe' : 'java')
+  return exists(java) ? { keep: true, javaHome } : { keep: false, invalidJavaHome: javaHome }
+}
+
 export async function run(): Promise<void> {
   try {
     const config = readConfig()
     checkChecksumRequirement(config.csVersion, config.requireChecksum)
     writeMirrorsFile()
+
+    const existingJavaHome = checkExistingJavaHome(
+      core.getInput('jvm'),
+      process.env.JAVA_HOME,
+      process.platform,
+      fs.existsSync,
+    )
+    if (!existingJavaHome.keep && existingJavaHome.invalidJavaHome) {
+      core.warning(
+        `JAVA_HOME is set to ${existingJavaHome.invalidJavaHome}, but no java launcher was found under its bin directory. Ignoring it, and installing Coursier's default JVM instead (set the jvm input to pick a specific JVM).`,
+      )
+      // Don't let our own cs invocations (JVM launchers, or cs picking a "system" JVM) use
+      // the stale value. JAVA_HOME is exported again once the JVM is installed.
+      delete process.env.JAVA_HOME
+    }
 
     const coursier = await core.group('Install Coursier', async () => {
       const coursier = await installCoursier(config)
@@ -650,9 +682,9 @@ export async function run(): Promise<void> {
       const jvmIndexInput = core.getInput('jvm-index')
       const jvmArg = jvmInput ? ['--jvm', jvmInput] : []
       const jvmIndexArg = jvmIndexInput ? ['--jvm-index', jvmIndexInput] : []
-      if (!jvmInput && process.env.JAVA_HOME) {
-        core.info(`skipping, JVM is already installed in ${process.env.JAVA_HOME}`)
-        core.setOutput('java-home', process.env.JAVA_HOME)
+      if (existingJavaHome.keep) {
+        core.info(`skipping, JVM is already installed in ${existingJavaHome.javaHome}`)
+        core.setOutput('java-home', existingJavaHome.javaHome)
       } else {
         await cs(config, coursier, 'java', ...jvmArg, ...jvmIndexArg, '-version')
         const csJavaHome = await cs(config, coursier, 'java-home', ...jvmArg, ...jvmIndexArg)
