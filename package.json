@@ -43,7 +43,7 @@
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^26.6.6",
-    "@typescript-eslint/eslint-plugin": "^8.58.0",
+    "@typescript-eslint/eslint-plugin": "^8.72.2",
     "@typescript-eslint/parser": "^8.72.1",
     "esbuild": "^0.28.2",
     "eslint": "^10.14.0",
