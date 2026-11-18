@@ -14,7 +14,7 @@ import { compareVersions } from 'compare-versions'
 
 import checksums from './checksums.json'
 
-const defaultVersion = '2.1.26'
+const defaultVersion = '2.1.27'
 
 // SHA-256 of the Coursier release assets, per version then per asset name. The update-coursier
 // workflow regenerates it for the default version, from assets whose build provenance
