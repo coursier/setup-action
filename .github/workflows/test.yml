@@ -64,11 +64,13 @@ jobs:
     - name: Verify extraJvmArgs changed the coursier cache location
       shell: bash
       run: |
-        index=".ci-tmp/extra jvm args cache/https/github.com/coursier/jvm-index/raw/master/index.json"
-        if [ -f "$index" ]; then
+        # the JVM index is index.json up to coursier 2.1.26, and
+        # indices-v2/<os>-<arch>.json since 2.1.27
+        index_dir=".ci-tmp/extra jvm args cache/https/github.com/coursier/jvm-index/raw/master"
+        if [ -n "$(find "$index_dir" -type f -name '*.json' 2>/dev/null)" ]; then
           echo "extraJvmArgs correctly passed to cs (JVM index cached under the custom cache)"
         else
-          echo "::error::extraJvmArgs test: $index not found"
+          echo "::error::extraJvmArgs test: no JVM index found under $index_dir"
           find .ci-tmp || true
           exit 1
         fi
